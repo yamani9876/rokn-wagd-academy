@@ -253,6 +253,9 @@
 
     .only-director { display: none }
     body.director .only-director { display: block }
+    body.supervisor #openUsersLink,
+    body.supervisor .fixed-admin-actions { display: none }
+    .student-meta { color: var(--mute); font-size: .92rem; line-height: 1.7 }
 
     .contact-list {
       display: grid;
@@ -415,14 +418,34 @@
 
     <!-- REGISTER -->
     <section id="register" class="view">
-      <div class="card p-5 max-w-md mx-auto mt-6">
+      <div class="card p-5 max-w-lg mx-auto mt-6">
         <h2 class="text-2xl mb-4" data-i18n="register"></h2>
         <form id="fReg" class="grid gap-3">
-          <input class="inp" id="rn" required data-ph="fullName"><input class="inp" id="rp" required
-            data-ph="parentPhone" inputmode="tel">
-          <select class="inp" id="rs"></select>
-          <button class="btn b-pink" data-i18n="submitReg"></button>
+          <input class="inp" id="rn" required data-ph="fullName" maxlength="80" autocomplete="name">
+          <input class="inp" id="rp" required data-ph="phone" inputmode="tel" maxlength="30" autocomplete="tel">
+          <label class="grid gap-1 font-bold"><span data-i18n="gradeGroup"></span>
+            <select class="inp" id="rs" required></select>
+          </label>
+          <label class="grid gap-1 font-bold"><span data-i18n="startDate"></span>
+            <input class="inp" id="rStart" type="date" required>
+          </label>
+          <label class="grid gap-1 font-bold"><span data-i18n="endDate"></span>
+            <input class="inp" id="rEnd" type="date" required>
+          </label>
+          <label class="grid gap-1 font-bold"><span data-i18n="fees"></span>
+            <input class="inp" id="rFees" type="number" min="0" step="0.01" inputmode="decimal">
+          </label>
+          <label class="grid gap-1 font-bold"><span data-i18n="paidAmount"></span>
+            <input class="inp" id="rPaid" type="number" min="0" step="0.01" inputmode="decimal">
+          </label>
+          <p id="rRemain" class="student-meta" aria-live="polite"></p>
+          <div class="flex flex-wrap gap-2">
+            <button class="btn b-pink" id="rSubmit" type="submit"></button>
+            <button class="btn b-ghost" id="rCancel" type="button" hidden data-i18n="cancelEdit"></button>
+          </div>
         </form>
+        <h3 class="text-xl mt-6 mb-3" data-i18n="studentList"></h3>
+        <div class="grid gap-2" id="regList"></div>
       </div>
     </section>
 
@@ -510,8 +533,22 @@
       <div class="grid grid-cols-3 gap-3" id="stats"></div>
       <div class="flex flex-wrap gap-2 mt-5" id="adTabs"></div>
       <div class="card p-4 mt-3">
-        <form id="adForm" class="grid md:grid-cols-[1fr_1fr_auto] gap-3"><input class="inp" id="adName" required><select
-            class="inp" id="adSel"></select><button class="btn b-pink" data-i18n="add"></button></form>
+        <form id="adForm" class="grid gap-3">
+          <div class="grid md:grid-cols-[1fr_1fr_auto] gap-3">
+            <input class="inp" id="adName" required maxlength="80">
+            <select class="inp" id="adSel"></select>
+            <button class="btn b-pink" id="adSubmit" type="submit"></button>
+          </div>
+          <div id="adStudentFields" class="grid sm:grid-cols-2 gap-3">
+            <input class="inp" id="adPhone" data-ph="phone" inputmode="tel" maxlength="30" autocomplete="tel">
+            <label class="grid gap-1 text-sm font-bold"><span data-i18n="startDate"></span><input class="inp" id="adStart" type="date"></label>
+            <label class="grid gap-1 text-sm font-bold"><span data-i18n="endDate"></span><input class="inp" id="adEnd" type="date"></label>
+            <label class="grid gap-1 text-sm font-bold"><span data-i18n="fees"></span><input class="inp" id="adFees" type="number" min="0" step="0.01" inputmode="decimal"></label>
+            <label class="grid gap-1 text-sm font-bold"><span data-i18n="paidAmount"></span><input class="inp" id="adPaid" type="number" min="0" step="0.01" inputmode="decimal"></label>
+            <p id="adRemain" class="student-meta sm:col-span-2" aria-live="polite"></p>
+            <button class="btn b-ghost w-fit" id="adCancel" type="button" hidden data-i18n="cancelEdit"></button>
+          </div>
+        </form>
         <div class="mt-4 grid gap-2" id="adList"></div>
       </div>
     </section>
@@ -542,7 +579,7 @@
       ar: {
         name: "أكاديمية ركن وجد", welcome: "أهلاً بكم في أكاديمية ركن وجد", director: "Manager", directorName: "Dr. Mohamed Mohamed", motto: "تعلّم • انمُ • تألّق",
         login: "تسجيل الدخول", register: "تسجيل طالب جديد", stages: "المرحلة التعليمية", live: "الحصص الأونلاين", library: "المكتبة التعليمية", contact: "تواصل معنا", about: "نبذة عن الأكاديمية ورسالتها", admin: "لوحة الإدارة",
-        student: "طالب", teacher: "معلم", username: "اسم المستخدم", password: "كلمة المرور", fullName: "الاسم الكامل", parentPhone: "هاتف ولي الأمر", submitReg: "إرسال الطلب", email: "البريد الإلكتروني", message: "رسالتك", send: "إرسال الرسالة",
+        student: "طالب", teacher: "معلم", username: "اسم المستخدم", password: "كلمة المرور", fullName: "اسم الطالب", parentPhone: "هاتف ولي الأمر", phone: "رقم الهاتف", gradeGroup: "الصف / الفصل / المجموعة", startDate: "تاريخ البدء", endDate: "تاريخ الانتهاء / التجديد", fees: "الرسوم", paidAmount: "المبلغ المدفوع", remainingFees: "المتبقي", balanceDue: "باقي", noFees: "لا توجد رسوم مسجلة", submitReg: "حفظ الطالب", saveEdit: "حفظ التعديلات", cancelEdit: "إلغاء", edit: "تعديل", studentList: "سجل الطلاب", email: "البريد الإلكتروني", message: "رسالتك", send: "إرسال الرسالة", accessDenied: "غير مصرح لك بهذا الإجراء.", supervisorDenied: "دور المشرف مخصص لتسجيل الطلاب وتعديل بياناتهم فقط، ولا يشمل لوحة الإدارة أو إدارة المستخدمين.",
         todaySched: "جدول حصص اليوم", recorded: "المحاضرات المسجلة", join: "انضم للحصة الآن", watch: "شاهد", liveNow: "مباشر الآن", later: "قريباً", all: "الكل", videos: "فيديو", upload: "رفع الملف", fileTitle: "عنوان الملف", open: "فتح",
         subjects: "مواد المرحلة", kg: "روضة", grade: "الصف", adminTitle: "لوحة التحكم", add: "إضافة", del: "حذف", students: "الطلاب", teachers: "المعلمين", classes: "الفصول والمجموعات", newClass: "اسم الفصل / المجموعة", newName: "الاسم",
         aboutTxt: "أكاديمية ركن وجد منصة تعليمية أونلاين للأطفال من KG1 حتى الصف العاشر، تجمع بين الحصص المباشرة والدروس المسجلة في بيئة آمنة ومحفّزة.", missionTxt: "أن نبني متعلّماً واثقاً يحب اللغة والمعرفة، بأسلوب ممتع وخطوات واضحة تناسب كل طفل.",
@@ -552,7 +589,7 @@
       en: {
         name: "Rokn Wajd Academy", welcome: "Welcome to Rokn Wajd Academy", director: "Manager", directorName: "Dr. Mohamed Mohamed", motto: "Learn • Grow • Shine",
         login: "Log in", register: "Register new student", stages: "Learning stages", live: "Live classes", library: "Learning library", contact: "Contact us", about: "About & mission", admin: "Admin panel",
-        student: "Student", teacher: "Teacher", username: "Username", password: "Password", fullName: "Full name", parentPhone: "Parent phone", submitReg: "Send request", email: "Email", message: "Your message", send: "Send message",
+        student: "Student", teacher: "Teacher", username: "Username", password: "Password", fullName: "Student name", parentPhone: "Parent phone", phone: "Phone number", gradeGroup: "Grade / class / group", startDate: "Start date", endDate: "End / renewal date", fees: "Fees", paidAmount: "Paid amount", remainingFees: "Remaining", balanceDue: "Balance due", noFees: "No fees recorded", submitReg: "Save student", saveEdit: "Save changes", cancelEdit: "Cancel", edit: "Edit", studentList: "Student records", email: "Email", message: "Your message", send: "Send message", accessDenied: "You do not have access to this action.", supervisorDenied: "Supervisors can only register and edit students. The admin panel and user management are closed.",
         todaySched: "Today's class schedule", recorded: "Recorded lectures", join: "Join class now", watch: "Watch", liveNow: "Live now", later: "Upcoming", all: "All", videos: "Videos", upload: "Upload file", fileTitle: "File title", open: "Open",
         subjects: "Stage subjects", kg: "KG", grade: "Grade", adminTitle: "Dashboard", add: "Add", del: "Delete", students: "Students", teachers: "Teachers", classes: "Classes & groups", newClass: "Class / group name", newName: "Name",
         aboutTxt: "Rokn Wajd Academy is an online learning platform for children from KG1 to Grade 10, combining live classes and recorded lessons in a safe, encouraging space.", missionTxt: "To raise confident learners who love language and knowledge, with fun methods and clear steps for every child.",
@@ -564,19 +601,34 @@
     const ST = [...['KG1', 'KG2'], ...Array.from({ length: 10 }, (_, i) => 'G' + (i + 1))];
     const stName = s => s.startsWith('KG') ? t('kg') + ' ' + s.slice(2) : t('grade') + ' ' + s.slice(1);
     const subj = s => s.startsWith('KG') ? ['phon', 'en', 'math', 'art'] : +s.slice(1) <= 6 ? ['ar', 'en', 'math', 'sci', 'art'] : ['ar', 'en', 'math', 'sci', 'cmp', 'soc', 'isl'];
-    const db = { students: [{ n: 'سارة أحمد', s: 'G3' }, { n: 'Omar Ali', s: 'KG2' }], teachers: [{ n: 'أ. منى', s: 's_ar' }, { n: 'Mr. Adam', s: 's_en' }], classes: [{ n: 'KG1 - A', s: 'KG1' }, { n: 'Grade 5 - B', s: 'G5' }] };
+    const db = { students: [{ n: 'سارة أحمد', s: 'G3', phone: '', startDate: '', endDate: '', renewalDate: '', fees: '', paidAmount: '' }, { n: 'Omar Ali', s: 'KG2', phone: '', startDate: '', endDate: '', renewalDate: '', fees: '', paidAmount: '' }], teachers: [{ n: 'أ. منى', s: 's_ar' }, { n: 'Mr. Adam', s: 's_en' }], classes: [{ n: 'KG1 - A', s: 'KG1' }, { n: 'Grade 5 - B', s: 'G5' }] };
+    const ACADEMY_DB_KEY = 'rw_academy_db_v1';
     const sched = [['09:00', 'ar', 'KG1', 'أ. منى'], ['10:00', 'en', 'G3', 'Mr. Adam'], ['11:30', 'math', 'G5', 'أ. هدى'], ['01:00', 'sci', 'G7', 'Mr. Sami']];
     let lib = [{ t: 'أنشودة الحروف', k: 'video', u: '' }, { t: 'ورقة عمل الرياضيات', k: 'pdf', u: '' }];
     const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
     function toast(m) { const e = $('#toast'); e.textContent = m; e.style.display = 'block'; clearTimeout(toast.x); toast.x = setTimeout(() => e.style.display = 'none', 2200) }
     function showView(v) { $$('.view').forEach(e => e.classList.toggle('on', e.id === v)); scrollTo(0, 0); if (location.hash !== '#' + v) history.replaceState(null, '', '#' + v) }
     function go(v) {
-      if (v === 'admin' && sessionStorage.getItem('rw_admin_gate') !== '1') { openAccessPrompt('admin', function () { showView('admin') }); return }
-      if (v === 'register' && sessionStorage.getItem('rw_manager_gate') !== '1') { openAccessPrompt('manager', function () { showView('register') }); return }
+      const user = sessionUser();
+      if (v === 'admin') {
+        if ((user && isSupervisorRole(user.role)) || document.body.classList.contains('supervisor')) { toast(t('supervisorDenied')); return }
+        if (user && isDirectorRole(user.role)) { showView('admin'); return }
+        if (!user && sessionStorage.getItem('rw_admin_gate') === '1') { showView('admin'); return }
+        openAccessPrompt('admin', function () { showView('admin') });
+        return
+      }
+      if (v === 'register') {
+        if (canRegisterStudents()) { showView('register'); return }
+        openAccessPrompt('manager', function () { showView('register') });
+        return
+      }
       showView(v)
     }
     const HB = [['register', '✏️', 'b-pink'], ['stages', '🎓', 'b-cyan'], ['live', '📹', 'b-sun'], ['library', '📚', 'b-blue'], ['contact', '💬', 'b-pink'], ['about', '⭐', 'b-cyan'], ['admin', '⚙️', 'b-ghost']];
-    function home() { $('#homeBtns').innerHTML = HB.map(([v, i, c]) => `<button class="btn ${c} !py-5 text-lg flex-col" onclick="go('${v}')"><span class="text-3xl">${i}</span>${t(v)}</button>`).join('') }
+    function home() {
+      const buttons = HB.filter(([v]) => !(v === 'admin' && isSupervisorSession()));
+      $('#homeBtns').innerHTML = buttons.map(([v, i, c]) => `<button class="btn ${c} !py-5 text-lg flex-col" onclick="go('${v}')"><span class="text-3xl">${i}</span>${t(v)}</button>`).join('')
+    }
     let curStage = 'KG1';
     function stages() {
       $('#stageTabs').innerHTML = ST.map(s => `<button class="tab ${s === curStage ? 'on' : ''}" onclick="curStage='${s}';stages()">${stName(s)}</button>`).join('');
@@ -631,13 +683,202 @@
     let lf = 'all';
     function libr() { const a = lib.filter(x => lf === 'all' || x.k === lf); $('#libList').innerHTML = a.map(x => `<div class="card p-4"><div class="text-3xl">${x.k === 'pdf' ? '📄' : '🎬'}</div><b class="block my-2">${x.t.replace(/</g, '&lt;')}</b>${x.u ? `<a class="btn b-blue !py-2" href="${x.u}" target="_blank" rel="noopener">${t('open')}</a>` : `<span style="color:var(--mute)">${L === 'ar' ? 'قريباً' : 'Soon'}</span>`}</div>`).join('') }
     let adT = 'students';
+    let editingIndex = -1;
+    function esc(value) {
+      return String(value == null ? '' : value).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+    }
+    function parseMoney(value) {
+      if (value == null || String(value).trim() === '') return 0;
+      const n = Number(value);
+      if (!Number.isFinite(n) || n < 0) return null;
+      return Math.round(n * 100) / 100;
+    }
+    function remainingAmount(fees, paid) {
+      const total = parseMoney(fees);
+      const paidAmount = parseMoney(paid);
+      return Math.max(0, Math.round(((total == null ? 0 : total) - (paidAmount == null ? 0 : paidAmount)) * 100) / 100);
+    }
+    function normalizeStudent(x, index) {
+      const end = x.endDate || x.renewalDate || '';
+      const fees = parseMoney(x.fees);
+      const paidAmount = parseMoney(x.paidAmount != null ? x.paidAmount : x.paid);
+      const safeFees = fees == null ? 0 : fees;
+      const safePaid = paidAmount == null ? 0 : paidAmount;
+      return {
+        id: x.id || ('stu_' + index + '_' + Math.random().toString(36).slice(2, 8)),
+        n: x.n || x.name || '',
+        s: x.s || x.grade || '',
+        phone: x.phone || x.p || '',
+        startDate: x.startDate || '',
+        endDate: end,
+        renewalDate: x.renewalDate || end,
+        fees: safeFees,
+        paidAmount: safePaid,
+        remainingAmount: remainingAmount(safeFees, safePaid)
+      };
+    }
+    function saveDb() {
+      try { localStorage.setItem(ACADEMY_DB_KEY, JSON.stringify({ students: db.students, teachers: db.teachers, classes: db.classes })) } catch (e) { }
+    }
+    function loadDb() {
+      let raw = null;
+      try { raw = JSON.parse(localStorage.getItem(ACADEMY_DB_KEY) || 'null') } catch (e) { raw = null }
+      if (!raw || typeof raw !== 'object') { db.students = db.students.map(normalizeStudent); saveDb(); return }
+      if (Array.isArray(raw.students)) db.students = raw.students.map(normalizeStudent);
+      if (Array.isArray(raw.teachers)) db.teachers = raw.teachers.map(x => ({ n: x.n || x.name || '', s: x.s || '' }));
+      if (Array.isArray(raw.classes)) db.classes = raw.classes.map(x => ({ n: x.n || x.name || '', s: x.s || '' }));
+    }
+    function readStudentFields(fields) {
+      const name = String(fields.n || '').trim();
+      const phone = String(fields.phone || '').trim();
+      const stage = String(fields.s || '').trim();
+      const startDate = String(fields.startDate || '').trim();
+      const endDate = String(fields.endDate || '').trim();
+      if (name.length < 2) return { error: L === 'ar' ? 'اكتب اسم الطالب.' : 'Enter the student name.' };
+      if (phone.length < 6) return { error: L === 'ar' ? 'اكتب رقم هاتف صالحاً.' : 'Enter a valid phone number.' };
+      if (!stage) return { error: L === 'ar' ? 'اختر الصف أو المجموعة.' : 'Choose a grade or group.' };
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) return { error: L === 'ar' ? 'حدد تاريخ البدء وتاريخ الانتهاء / التجديد.' : 'Choose a start date and an end / renewal date.' };
+      if (endDate < startDate) return { error: L === 'ar' ? 'تاريخ الانتهاء يجب أن يكون في تاريخ البدء أو بعده.' : 'The end date must be on or after the start date.' };
+      const fees = parseMoney(fields.fees);
+      const paidAmount = parseMoney(fields.paidAmount);
+      if (fees === null || paidAmount === null) return { error: L === 'ar' ? 'أدخل الرسوم والمبلغ المدفوع كأرقام صحيحة.' : 'Enter the fees and the paid amount as valid numbers.' };
+      return { student: { n: name, s: stage, phone, startDate, endDate, renewalDate: endDate, fees, paidAmount, remainingAmount: remainingAmount(fees, paidAmount) } };
+    }
+    function feeText(x) {
+      const fees = parseMoney(x.fees);
+      const paid = parseMoney(x.paidAmount);
+      const safeFees = fees == null ? 0 : fees;
+      const safePaid = paid == null ? 0 : paid;
+      const rem = remainingAmount(safeFees, safePaid);
+      return t('fees') + ': ' + safeFees + ' | ' + t('paidAmount') + ': ' + safePaid + ' | ' + t('remainingFees') + ': ' + rem;
+    }
+    function paintRemain(feesId, paidId, outId) {
+      const out = document.getElementById(outId);
+      const feesEl = document.getElementById(feesId);
+      const paidEl = document.getElementById(paidId);
+      if (!out || !feesEl || !paidEl) return;
+      const rem = remainingAmount(feesEl.value, paidEl.value);
+      out.textContent = rem > 0 ? (t('balanceDue') + ': ' + rem) : (t('remainingFees') + ': 0');
+    }
+    function paintEditChrome() {
+      const editing = editingIndex >= 0 && !!db.students[editingIndex];
+      const rSubmit = document.getElementById('rSubmit');
+      const rCancel = document.getElementById('rCancel');
+      if (rSubmit) rSubmit.textContent = editing ? t('saveEdit') : t('submitReg');
+      if (rCancel) rCancel.hidden = !editing;
+      const adSubmit = document.getElementById('adSubmit');
+      const adCancel = document.getElementById('adCancel');
+      if (adSubmit) adSubmit.textContent = (adT === 'students' && editing) ? t('saveEdit') : t('add');
+      if (adCancel) adCancel.hidden = !(adT === 'students' && editing);
+      paintRemain('rFees', 'rPaid', 'rRemain');
+      paintRemain('adFees', 'adPaid', 'adRemain');
+    }
+    function setField(id, value) {
+      const el = document.getElementById(id);
+      if (el) el.value = value == null ? '' : value;
+    }
+    function applyStudentToForms(student) {
+      setField('rn', student.n);
+      setField('rp', student.phone);
+      setField('rs', student.s);
+      setField('rStart', student.startDate);
+      setField('rEnd', student.endDate || student.renewalDate);
+      setField('rFees', student.fees);
+      setField('rPaid', student.paidAmount);
+      setField('adName', student.n);
+      setField('adPhone', student.phone);
+      if (adT === 'students') setField('adSel', student.s);
+      setField('adStart', student.startDate);
+      setField('adEnd', student.endDate || student.renewalDate);
+      setField('adFees', student.fees);
+      setField('adPaid', student.paidAmount);
+      paintEditChrome();
+    }
+    function clearStudentForms() {
+      ['rn', 'rp', 'rStart', 'rEnd', 'rFees', 'rPaid', 'adName', 'adPhone', 'adStart', 'adEnd', 'adFees', 'adPaid'].forEach(id => setField(id, ''));
+      const rs = document.getElementById('rs');
+      if (rs) rs.selectedIndex = 0;
+      if (adT === 'students') {
+        const sel = document.getElementById('adSel');
+        if (sel) sel.selectedIndex = 0;
+      }
+      paintEditChrome();
+    }
+    function startStudentEdit(index) {
+      if (!canEditStudents()) { toast(t('accessDenied')); return }
+      const student = db.students[index];
+      if (!student) return;
+      editingIndex = index;
+      if (adT !== 'students') { adT = 'students' }
+      admin();
+      applyStudentToForms(student);
+      const adminOn = document.getElementById('admin').classList.contains('on');
+      const form = document.getElementById(adminOn ? 'adForm' : 'fReg');
+      if (form) form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const focus = document.getElementById(adminOn ? 'adName' : 'rn');
+      if (focus) focus.focus();
+    }
+    function cancelStudentEdit() {
+      editingIndex = -1;
+      clearStudentForms();
+      admin();
+    }
+    function commitStudent(parsed) {
+      const record = Object.assign({}, parsed.student);
+      if (editingIndex >= 0 && db.students[editingIndex]) {
+        record.id = db.students[editingIndex].id;
+        db.students[editingIndex] = record;
+        editingIndex = -1;
+      } else {
+        if (!record.id) record.id = 'stu_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
+        db.students.push(record);
+      }
+      saveDb();
+      clearStudentForms();
+      admin();
+      toast(t('ok'));
+    }
+    function removeAcademyRecord(kind, index) {
+      if (!canManageAdmin()) { toast(t('accessDenied')); return }
+      if (!db[kind] || !db[kind][index]) return;
+      db[kind].splice(index, 1);
+      if (kind === 'students') {
+        if (index === editingIndex) editingIndex = -1;
+        else if (index < editingIndex) editingIndex -= 1;
+      }
+      saveDb();
+      admin();
+    }
+    function studentCard(x, i) {
+      const lab = !x.s ? '—' : (String(x.s).startsWith('s_') ? t(x.s) : stName(x.s));
+      const edit = canEditStudents() ? `<button type="button" class="btn b-cyan !py-1 !px-3" onclick="startStudentEdit(${i})">${t('edit')}</button>` : '';
+      const del = canManageAdmin() ? `<button type="button" class="btn b-ghost !py-1 !px-3" onclick="removeAcademyRecord('students',${i})">${t('del')}</button>` : '';
+      return `<article class="p-3 rounded-xl" style="background:var(--bg)"><div class="flex justify-between items-start gap-3"><div><b>${esc(x.n || '—')}</b><div class="student-meta">${esc(x.phone || '—')}</div><div class="student-meta">${esc(t('gradeGroup'))}: ${esc(lab)}</div><div class="student-meta">${esc(t('startDate'))}: ${esc(x.startDate || '—')} · ${esc(t('endDate'))}: ${esc(x.endDate || x.renewalDate || '—')}</div><div class="student-meta">${esc(feeText(x))}</div></div><div class="flex flex-wrap gap-2">${edit}${del}</div></div></article>`;
+    }
     function admin() {
       $('#stats').innerHTML = ['students', 'teachers', 'classes'].map((k, i) => `<div class="card p-4 text-center"><div class="hd text-3xl" style="color:${['var(--cyan)', 'var(--pink)', 'var(--blue)'][i]}">${db[k].length}</div>${t(k)}</div>`).join('');
       $('#adTabs').innerHTML = ['students', 'teachers', 'classes'].map(k => `<button class="tab ${k === adT ? 'on' : ''}" onclick="adT='${k}';admin()">${t(k)}</button>`).join('');
-      $('#adName').placeholder = adT === 'classes' ? t('newClass') : t('newName');
+      $('#adName').placeholder = adT === 'classes' ? t('newClass') : (adT === 'students' ? t('fullName') : t('newName'));
       $('#adSel').innerHTML = adT === 'teachers' ? ['ar', 'en', 'math', 'sci', 'art'].map(k => `<option value="s_${k}">${t('s_' + k)}</option>`).join('') : ST.map(s => `<option value="${s}">${stName(s)}</option>`).join('');
-      const lab = s => s.startsWith('s_') ? t(s) : stName(s);
-      $('#adList').innerHTML = db[adT].map((x, i) => `<div class="flex justify-between items-center p-3 rounded-xl" style="background:var(--bg)"><span><b>${x.n}</b> <span style="color:var(--mute)">· ${lab(x.s)}</span></span><button class="btn b-ghost !py-1 !px-3" onclick="db[adT].splice(${i},1);admin()">${t('del')}</button></div>`).join('')
+      const extra = document.getElementById('adStudentFields');
+      if (extra) {
+        extra.hidden = adT !== 'students';
+        extra.querySelectorAll('input').forEach(el => { el.required = adT === 'students' && el.type !== 'number'; el.disabled = adT !== 'students' });
+      }
+      const lab = s => !s ? '—' : (String(s).startsWith('s_') ? t(s) : stName(s));
+      const delBtn = (kind, i) => canManageAdmin() ? `<button class="btn b-ghost !py-1 !px-3" type="button" onclick="removeAcademyRecord('${kind}',${i})">${t('del')}</button>` : '';
+      const empty = `<p class="student-meta">${L === 'ar' ? 'لا يوجد طلاب بعد.' : 'No students yet.'}</p>`;
+      const cards = db.students.map(studentCard).join('') || empty;
+      const regList = document.getElementById('regList');
+      if (regList) regList.innerHTML = cards;
+      if (adT === 'students') {
+        $('#adList').innerHTML = cards;
+        if (editingIndex >= 0 && db.students[editingIndex]) applyStudentToForms(db.students[editingIndex]);
+        else paintEditChrome();
+        return;
+      }
+      $('#adList').innerHTML = db[adT].map((x, i) => `<div class="flex justify-between items-center p-3 rounded-xl" style="background:var(--bg)"><span><b>${esc(x.n)}</b> <span style="color:var(--mute)">· ${esc(lab(x.s))}</span></span>${delBtn(adT, i)}</div>`).join('');
+      paintEditChrome();
     }
     function i18n() {
       document.documentElement.lang = L; document.documentElement.dir = L === 'ar' ? 'rtl' : 'ltr'; document.title = t('name');
@@ -665,9 +906,38 @@
       }
       toast(t('ok'));
     };
-    $('#fReg').onsubmit = e => { e.preventDefault(); db.students.push({ n: $('#rn').value, s: $('#rs').value }); e.target.reset(); toast(t('ok')); admin() };
+    $('#fReg').onsubmit = e => {
+      e.preventDefault();
+      if (!canEditStudents()) { toast(t('accessDenied')); return }
+      const parsed = readStudentFields({ n: $('#rn').value, phone: $('#rp').value, s: $('#rs').value, startDate: $('#rStart').value, endDate: $('#rEnd').value, fees: $('#rFees').value, paidAmount: $('#rPaid').value });
+      if (parsed.error) { toast(parsed.error); return }
+      commitStudent(parsed);
+    };
+    ['rFees', 'rPaid'].forEach(id => { const el = document.getElementById(id); if (el) el.addEventListener('input', () => paintRemain('rFees', 'rPaid', 'rRemain')) });
+    const rCancel = document.getElementById('rCancel');
+    if (rCancel) rCancel.addEventListener('click', cancelStudentEdit);
     $('#fContact').onsubmit = e => { e.preventDefault(); e.target.reset(); toast(t('ok')) };
-    $('#adForm').onsubmit = e => { e.preventDefault(); db[adT].push({ n: $('#adName').value, s: $('#adSel').value }); $('#adName').value = ''; admin() };
+    $('#adForm').onsubmit = e => {
+      e.preventDefault();
+      if (adT === 'students') {
+        if (!canEditStudents()) { toast(t('accessDenied')); return }
+        const parsed = readStudentFields({ n: $('#adName').value, phone: $('#adPhone').value, s: $('#adSel').value, startDate: $('#adStart').value, endDate: $('#adEnd').value, fees: $('#adFees').value, paidAmount: $('#adPaid').value });
+        if (parsed.error) { toast(parsed.error); return }
+        commitStudent(parsed);
+        return;
+      }
+      if (!canManageAdmin()) { toast(t('accessDenied')); return }
+      const name = $('#adName').value.trim();
+      if (name.length < 2) { toast(L === 'ar' ? 'اكتب اسماً صالحاً.' : 'Enter a valid name.'); return }
+      db[adT].push({ n: name, s: $('#adSel').value });
+      $('#adName').value = '';
+      saveDb();
+      admin();
+      toast(t('ok'))
+    };
+    ['adFees', 'adPaid'].forEach(id => { const el = document.getElementById(id); if (el) el.addEventListener('input', () => paintRemain('adFees', 'adPaid', 'adRemain')) });
+    const adCancel = document.getElementById('adCancel');
+    if (adCancel) adCancel.addEventListener('click', cancelStudentEdit);
     $('#upBtn').onclick = () => { const f = $('#fileIn').files[0]; if (!f) return toast(t('need')); lib.unshift({ t: $('#fileTitle').value || f.name, k: f.type === 'application/pdf' ? 'pdf' : 'video', u: URL.createObjectURL(f) }); $('#fileIn').value = ''; $('#fileTitle').value = ''; libr(); toast(t('ok')) };
     $$('[data-f]').forEach(b => b.onclick = () => { lf = b.dataset.f; $$('[data-f]').forEach(x => x.classList.toggle('on', x === b)); libr() });
     const ACADEMY_USERS_KEY = 'academy_users';
@@ -707,23 +977,82 @@
       const pass = String(password || '').trim();
       return ensureAcademyUsers().find(u => String(u.username || '').trim().toLowerCase() === key && String(u.password || '') === pass) || null;
     }
+    function isDirectorRole(role) { return String(role || '').includes('مدير') }
+    function isSupervisorRole(role) { return String(role || '').includes('مشرف') }
+    function portalActor() {
+      try {
+        const session = JSON.parse(localStorage.getItem('rw_session_v1') || 'null');
+        if (!session || !session.userId || session.exp < Date.now()) return null;
+        const data = JSON.parse(localStorage.getItem('rw_users_v1') || 'null');
+        const users = data && Array.isArray(data.users) ? data.users : [];
+        const user = users.find(item => item.id === session.userId && item.active && item.role === session.role);
+        if (!user) return null;
+        const map = { admin: 'مدير', supervisor: 'مشرف', parent: 'ولي الأمر', teacher: 'المعلم' };
+        return { username: user.username, role: map[user.role] || '', token: String(session.token || session.userId) };
+      } catch (e) { return null }
+    }
+    function sessionUser() {
+      try {
+        const saved = JSON.parse(sessionStorage.getItem(GATE_SESSION_KEY) || 'null');
+        if (!saved || !saved.username) return null;
+        const live = (readAcademyUsers() || []).find(u => String(u.username || '').toLowerCase() === String(saved.username).toLowerCase());
+        if (!live) return null;
+        return { username: live.username, role: live.role, password: live.password };
+      } catch (e) { return null }
+    }
+    function isSupervisorSession() {
+      const user = sessionUser();
+      return !!(user && isSupervisorRole(user.role));
+    }
+    function canManageAdmin() {
+      const user = sessionUser();
+      if (user) return isDirectorRole(user.role);
+      return sessionStorage.getItem('rw_admin_gate') === '1';
+    }
+    function canRegisterStudents() {
+      const user = sessionUser();
+      if (user) return isDirectorRole(user.role) || isSupervisorRole(user.role);
+      return sessionStorage.getItem('rw_manager_gate') === '1';
+    }
+    function canEditStudents() {
+      return canRegisterStudents() || canManageAdmin();
+    }
     function paintSession(user) {
       document.body.classList.add('authed');
-      document.body.classList.toggle('director', String(user.role || '').includes('مدير') || sessionStorage.getItem('rw_admin_gate') === '1');
+      const director = isDirectorRole(user.role);
+      const supervisor = isSupervisorRole(user.role);
+      document.body.classList.toggle('director', director);
+      document.body.classList.toggle('supervisor', supervisor);
+      if (director) {
+        sessionStorage.setItem('rw_admin_gate', '1');
+        sessionStorage.setItem('rw_manager_gate', '1');
+      } else if (supervisor) {
+        sessionStorage.removeItem('rw_admin_gate');
+        sessionStorage.setItem('rw_manager_gate', '1');
+      } else {
+        sessionStorage.removeItem('rw_admin_gate');
+        sessionStorage.removeItem('rw_manager_gate');
+      }
       const bar = document.getElementById('userHeaderBar');
       if (bar) { bar.classList.remove('hidden'); bar.classList.add('flex') }
       const badge = document.getElementById('userBadgeText');
       if (badge) badge.textContent = 'مرحباً ' + user.username;
+      home();
     }
     function logoutRokn() {
       sessionStorage.removeItem(GATE_SESSION_KEY);
-      document.body.classList.remove('authed', 'director');
+      sessionStorage.removeItem('rw_admin_gate');
+      sessionStorage.removeItem('rw_manager_gate');
+      document.body.classList.remove('authed', 'director', 'supervisor');
       const bar = document.getElementById('userHeaderBar');
       if (bar) { bar.classList.add('hidden'); bar.classList.remove('flex') }
       const err = document.getElementById('gateError');
       if (err) err.textContent = '';
       const form = document.getElementById('gateForm');
       if (form) form.reset();
+      const portalUser = portalActor();
+      if (portalUser) sessionStorage.setItem('rw_portal_bridge_skip', portalUser.token);
+      home();
       go('home');
     }
     function acceptLogin(user) {
@@ -740,7 +1069,15 @@
       }
       let saved = null;
       try { saved = JSON.parse(sessionStorage.getItem(GATE_SESSION_KEY) || 'null') } catch (e) { saved = null }
-      if (!saved || !saved.username) return;
+      if (!saved || !saved.username) {
+        const portalUser = portalActor();
+        if (!portalUser || !portalUser.role || sessionStorage.getItem('rw_portal_bridge_skip') === portalUser.token) return;
+        const linked = (readAcademyUsers() || []).find(u => String(u.username || '').toLowerCase() === String(portalUser.username).toLowerCase());
+        const actor = linked || { username: portalUser.username, role: portalUser.role };
+        sessionStorage.setItem(GATE_SESSION_KEY, JSON.stringify({ username: actor.username, role: actor.role }));
+        paintSession(actor);
+        return;
+      }
       const live = (readAcademyUsers() || []).find(u => String(u.username || '').toLowerCase() === String(saved.username).toLowerCase());
       if (!live) { sessionStorage.removeItem(GATE_SESSION_KEY); return }
       paintSession(live);
@@ -756,29 +1093,13 @@
       if (err) err.textContent = '';
       acceptLogin(user);
     });
-    function isMainAdminLogin(username, password) {
-      return String(username || '').trim().toLowerCase() === 'mohamed' && String(password || '') === '112233';
-    }
-    function isManagerLogin(username, password) {
-      if (isMainAdminLogin(username, password)) return true;
-      const key = String(username || '').trim().toLowerCase();
-      const pass = String(password || '');
-      return (readAcademyUsers() || []).some(item => String(item.username || '').trim().toLowerCase() === key && String(item.password || '') === pass && String(item.role || '').includes('مدير'));
-    }
     let accessNext = null;
     function openAccessPrompt(mode, next) {
-      accessNext = function () {
-        if (mode === 'admin') {
-          sessionStorage.setItem('rw_admin_gate', '1');
-          sessionStorage.setItem('rw_manager_gate', '1');
-          document.body.classList.add('director');
-        } else sessionStorage.setItem('rw_manager_gate', '1');
-        if (next) next();
-      };
+      accessNext = next || null;
       document.getElementById('accessTitle').textContent = mode === 'admin' ? 'دخول المدير' : 'تسجيل طالب جديد';
       document.getElementById('accessHint').textContent = mode === 'admin'
-        ? 'إدارة المستخدمين ولوحة الإدارة متاحتان للمدير فقط.'
-        : 'تسجيل طالب جديد متاح للمدير أو لأي حساب بدور «مدير».';
+        ? 'لوحة الإدارة وإدارة المستخدمين متاحتان لأي حساب بدور «مدير».'
+        : 'تسجيل طالب جديد متاح لحسابات «مدير» و«مشرف».';
       document.getElementById('accessError').textContent = '';
       document.getElementById('accessForm').dataset.mode = mode;
       document.getElementById('accessPrompt').hidden = false;
@@ -789,7 +1110,13 @@
       document.getElementById('accessForm').reset();
     }
     function guardUsersLink(event) {
-      if (sessionStorage.getItem('rw_admin_gate') === '1') {
+      const user = sessionUser();
+      if (user && isSupervisorRole(user.role)) {
+        event.preventDefault();
+        toast(t('supervisorDenied'));
+        return;
+      }
+      if (canManageAdmin()) {
         if (!event.currentTarget || event.currentTarget.tagName !== 'A') location.href = 'users.html';
         return;
       }
@@ -810,14 +1137,25 @@
       const mode = accessForm.dataset.mode || 'admin';
       const username = document.getElementById('accessUser').value;
       const password = document.getElementById('accessPass').value;
-      const ok = mode === 'admin' ? isMainAdminLogin(username, password) : isManagerLogin(username, password);
-      if (!ok) { document.getElementById('accessError').textContent = 'اسم المستخدم أو كلمة المرور غير صحيحة.'; return }
+      const user = findAcademyUser(username, password);
+      const error = document.getElementById('accessError');
+      if (!user) { error.textContent = 'اسم المستخدم أو كلمة المرور غير صحيحة.'; return }
+      if (mode === 'admin' && !isDirectorRole(user.role)) {
+        error.textContent = isSupervisorRole(user.role) ? t('supervisorDenied') : 'لوحة الإدارة متاحة لحسابات المدير فقط.';
+        return
+      }
+      if (mode !== 'admin' && !isDirectorRole(user.role) && !isSupervisorRole(user.role)) {
+        error.textContent = 'تسجيل الطلاب متاح للمدير أو المشرف فقط.';
+        return
+      }
+      sessionStorage.setItem(GATE_SESSION_KEY, JSON.stringify({ username: user.username, role: user.role }));
+      paintSession(user);
       const next = accessNext;
       closeAccessPrompt();
       if (next) next();
     });
+    loadDb();
     bootGate();
-    if (sessionStorage.getItem('rw_admin_gate') === '1') document.body.classList.add('director');
     i18n(); const h = location.hash.slice(1); if (h && document.getElementById(h)) go(h);
   </script>
 <p class="dev-sign" dir="ltr">Created by Eng: Ahmed Yamani</p>

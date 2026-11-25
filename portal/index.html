@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>تسجيل الدخول | أكاديمية ركن وجد</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/app.css">
+  <script src="js/theme.js"></script>
+</head>
+<body class="booting">
+  <p class="boot">جارٍ تجهيز البوابة…</p>
+  <main class="login-layout">
+    <section class="hero-panel">
+      <a class="brand" href="../index.html">
+        <span class="logo" aria-hidden="true">و</span>
+        <span><strong data-academy>أكاديمية ركن وجد</strong><br><small>بوابة الطلاب والمعلمين</small></span>
+      </a>
+      <h1>دخول حسب الدور، وصفحة خاصة لكل مستخدم.</h1>
+      <p class="lede">المدير Dr. Mohamed Mohamed يدير الحسابات والأقسام. المعلم يرى فصوله ويسجّل الدرجات. ولي الأمر يتابع أبناءه فقط.</p>
+    </section>
+
+    <section class="card login-card">
+      <div class="split">
+        <h2>تسجيل الدخول</h2>
+        <button type="button" class="btn ghost" data-theme-toggle>مظهر داكن</button>
+      </div>
+      <p id="login-alert" class="alert" role="alert" hidden></p>
+      <form id="login-form" class="stack">
+        <label for="username">اسم المستخدم أو البريد
+          <input id="username" name="username" autocomplete="username" required maxlength="80" spellcheck="false">
+        </label>
+        <label for="password">كلمة المرور
+          <span class="password-row">
+            <input id="password" name="password" type="password" autocomplete="current-password" required maxlength="72">
+            <button type="button" class="btn ghost" id="toggle-password" aria-pressed="false">إظهار</button>
+          </span>
+        </label>
+        <button class="btn" id="login-submit" type="submit">تسجيل الدخول</button>
+      </form>
+      <p class="switch">
+        <span>حساب جديد؟</span>
+        <button type="button" class="btn pink" id="open-register">تسجيل جديد</button>
+      </p>
+    </section>
+  </main>
+
+  <div id="register-modal" class="modal" hidden aria-hidden="true">
+    <button type="button" class="backdrop" data-modal-backdrop aria-label="إغلاق"></button>
+    <section class="card dialog" role="dialog" aria-modal="true" aria-labelledby="register-title">
+      <div class="split">
+        <h2 id="register-title">تسجيل جديد</h2>
+        <button type="button" class="btn ghost" id="close-register">إغلاق</button>
+      </div>
+      <p class="muted">يمكن إنشاء حساب معلم أو ولي أمر. حساب المدير يبقى حساب الإدارة فقط.</p>
+      <p id="register-alert" class="alert" role="alert" hidden></p>
+      <form id="register-form" class="stack">
+        <label for="reg-name">الاسم
+          <input id="reg-name" name="name" autocomplete="name" required maxlength="60">
+        </label>
+        <label for="reg-email">البريد الإلكتروني
+          <input id="reg-email" name="email" type="email" autocomplete="email" required maxlength="80">
+        </label>
+        <label for="reg-password">كلمة المرور
+          <input id="reg-password" name="password" type="password" autocomplete="new-password" required minlength="8" maxlength="72">
+        </label>
+        <label for="reg-role">الدور
+          <select id="reg-role" name="role" required>
+            <option value="teacher">معلم</option>
+            <option value="parent">ولي أمر</option>
+          </select>
+        </label>
+        <button class="btn" id="register-submit" type="submit">إنشاء الحساب</button>
+      </form>
+    </section>
+  </div>
+  <div id="toast" role="status"></div>
+  <script src="js/ui.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/login.js"></script>
+</body>
+</html>

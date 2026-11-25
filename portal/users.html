@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إدارة المستخدمين - أكاديمية ركن وجد</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 20px;
+            direction: rtl;
+            text-align: right;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        .nav-links {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 14px;
+        }
+        .nav-links a {
+            color: #3182ce;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .nav-links a:hover {
+            text-decoration: underline;
+        }
+        h2 {
+            color: #1a365d;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+            margin-top: 15px;
+            font-size: 1.4rem;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: bold;
+            color: #4a5568;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-family: inherit;
+            font-size: 15px;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #3182ce;
+            box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.2);
+        }
+        button[type="submit"] {
+            background-color: #3182ce;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            font-family: inherit;
+            transition: background-color .18s ease, transform .18s ease, box-shadow .18s ease;
+        }
+        button[type="submit"]:hover {
+            background-color: #2b6cb0;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(26, 54, 93, .16);
+        }
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #e2e8f0;
+            padding: 12px;
+            text-align: center;
+        }
+        th {
+            background-color: #ebf8ff;
+            color: #2b6cb0;
+            font-weight: 700;
+        }
+        tr:nth-child(even) {
+            background-color: #fafbfc;
+        }
+        .btn-delete {
+            background-color: #e53e3e;
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            font-size: 13px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 600;
+            transition: background-color .18s ease, transform .18s ease, box-shadow .18s ease;
+        }
+        .btn-delete:hover {
+            background-color: #c53030;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(26, 54, 93, .16);
+        }
+        .btn-edit {
+            background-color: #3182ce;
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            font-size: 13px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 600;
+            transition: background-color .18s ease, transform .18s ease, box-shadow .18s ease;
+        }
+        .btn-edit:hover { background-color: #2b6cb0; transform: translateY(-2px); box-shadow: 0 8px 16px rgba(26, 54, 93, .16); }
+        .row-actions { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+        .btn-cancel {
+            background: #edf2f7;
+            color: #2d3748;
+            border: none;
+            padding: 12px 18px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 600;
+            margin-right: 8px;
+            transition: background-color .18s ease, transform .18s ease, box-shadow .18s ease;
+        }
+        .btn-cancel:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(26, 54, 93, .16); }
+        @media (prefers-reduced-motion: reduce) {
+            button[type="submit"], .btn-edit, .btn-delete, .btn-cancel { transition: none; }
+            button[type="submit"]:hover, .btn-edit:hover, .btn-delete:hover, .btn-cancel:hover { transform: none; box-shadow: none; }
+        }
+        .dev-sign {
+            position: fixed;
+            left: 12px;
+            bottom: 10px;
+            margin: 0;
+            padding: 6px 12px;
+            border-radius: 999px;
+            background: #fff;
+            color: #4a5568;
+            border: 1px solid #e2e8f0;
+            font-size: 12px;
+            z-index: 20;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .badge-admin {
+            background-color: #e9d8fd;
+            color: #6b46c1;
+        }
+        .badge-teacher {
+            background-color: #e6fffa;
+            color: #234e52;
+        }
+        .badge-parent {
+            background-color: #feebc8;
+            color: #7b341e;
+        }
+        .badge-supervisor {
+            background-color: #bee3f8;
+            color: #2a4365;
+        }
+        .badge-protected {
+            background-color: #edf2f7;
+            color: #718096;
+            font-size: 11px;
+        }
+        .alert {
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            display: none;
+        }
+        .alert-success {
+            background-color: #c6f6d5;
+            color: #22543d;
+            border: 1px solid #9ae6b4;
+        }
+        .alert-error {
+            background-color: #fed7d7;
+            color: #742a2a;
+            border: 1px solid #feb2b2;
+        }
+        .password-cell code {
+            background: #edf2f7;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+            direction: ltr;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+<div id="pageAdminGate" style="position:fixed;inset:0;z-index:80;display:grid;place-items:center;background:rgba(13,20,48,.45);padding:20px">
+    <form id="pageAdminGateForm" style="background:#fff;border-radius:16px;padding:24px;width:min(420px,100%);display:grid;gap:12px">
+        <h2 style="margin:0">دخول المدير</h2>
+        <p style="margin:0;color:#4a5568">إدارة المستخدمين ولوحة المدير متاحتان لأي حساب بدور «مدير». دور «مشرف» لتسجيل الطلاب وتعديل بياناتهم فقط.</p>
+        <p id="pageGateMsg" style="margin:0;min-height:1.2rem;color:#c42345"></p>
+        <label>اسم المستخدم
+            <input id="pageGateUser" required autocomplete="username" style="display:block;width:100%;margin-top:6px;padding:10px;border:1px solid #e2e8f0;border-radius:8px">
+        </label>
+        <label>كلمة المرور
+            <input id="pageGatePass" type="password" required autocomplete="current-password" style="display:block;width:100%;margin-top:6px;padding:10px;border:1px solid #e2e8f0;border-radius:8px">
+        </label>
+        <button type="submit">دخول</button>
+    </form>
+</div>
+
+<div class="container">
+    <div class="nav-links">
+        <a href="../index.html">← العودة للرئيسية</a>
+        <a href="admin.html">لوحة المدير المتقدمة ↗</a>
+    </div>
+
+    <h2 id="userFormTitle">لوحة تحكم المدير - إضافة مستخدم جديد</h2>
+    
+    <div id="alertBox" class="alert"></div>
+
+    <!-- نموذج إضافة مستخدم -->
+    <form id="addUserForm" onsubmit="addUser(event)">
+        <div class="form-group">
+            <label for="newUsername">اسم المستخدم:</label>
+            <input type="text" id="newUsername" required placeholder="مثال: teacher_mohamed" autocomplete="username">
+        </div>
+        
+        <div class="form-group">
+            <label for="newPassword">كلمة المرور:</label>
+            <input type="password" id="newPassword" required placeholder="أدخل كلمة المرور" autocomplete="new-password">
+        </div>
+        
+        <div class="form-group">
+            <label for="newRole">الدور / الصلاحية:</label>
+            <select id="newRole">
+                <option value="المعلم">معلم</option>
+                <option value="ولي الأمر">ولي أمر</option>
+                <option value="مدير">مدير</option>
+                <option value="مشرف">مشرف</option>
+            </select>
+        </div>
+        
+        <button type="submit" id="userSubmitBtn">إضافة المستخدم وحفظه</button>
+        <button type="button" class="btn-cancel" id="cancelEditBtn" style="display:none" onclick="cancelEdit()">إلغاء</button>
+    </form>
+
+    <h2>قائمة المستخدمين الحاليين</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>اسم المستخدم</th>
+                <th>كلمة المرور</th>
+                <th>الدور</th>
+                <th>الإجراء</th>
+            </tr>
+        </thead>
+        <tbody id="usersTableBody">
+            <!-- سيتم تعبئة المستخدمين تلقائياً هنا -->
+        </tbody>
+    </table>
+</div>
+
+<script>
+    const STORAGE_KEY = 'academy_users';
+    const PORTAL_USERS_KEY = 'rw_users_v1';
+
+    // إظهار تنبيه في أعلى الصفحة
+    function showAlert(message, isSuccess = true) {
+        const box = document.getElementById('alertBox');
+        box.textContent = message;
+        box.className = 'alert ' + (isSuccess ? 'alert-success' : 'alert-error');
+        box.style.display = 'block';
+        clearTimeout(box.timer);
+        box.timer = setTimeout(() => {
+            box.style.display = 'none';
+        }, 3500);
+    }
+
+    // تهيئة البيانات الافتراضية في الـ localStorage إذا لم تكن موجودة
+    function initUsers() {
+        let users = [];
+        try {
+            users = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+        } catch (e) {
+            users = null;
+        }
+
+        if (!Array.isArray(users) || users.length === 0) {
+            users = [
+                { username: 'mohamed', password: '112233', role: 'مدير' },
+                { username: 'teacher', password: 'teacher123', role: 'المعلم' },
+                { username: 'parent', password: 'parent123', role: 'ولي الأمر' }
+            ];
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
+        } else {
+            let changed = false;
+            users.forEach(u => { if (String(u.role || '').includes('المديرة')) { u.role = 'مدير'; changed = true } });
+            const mainAdmin = users.find(u => String(u.username || '').toLowerCase() === 'mohamed');
+            if (!mainAdmin) {
+                const legacy = users.find(u => String(u.username || '').toLowerCase() === 'admin');
+                if (legacy) { legacy.username = 'mohamed'; legacy.password = '112233'; legacy.role = 'مدير'; }
+                else users.unshift({ username: 'mohamed', password: '112233', role: 'مدير' });
+                changed = true;
+            }
+            if (changed) localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
+        }
+
+        renderUsers();
+    }
+
+    let editingIndex = -1;
+
+    function loadUsers() {
+        try {
+            const users = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            return Array.isArray(users) ? users : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    function isDirectorAccount(user) {
+        return String(user.role || '').includes('مدير');
+    }
+
+    function isSupervisorRole(role) {
+        return String(role || '').includes('مشرف');
+    }
+
+    function isPrimaryDirector(user) {
+        return String(user.username || '').trim().toLowerCase() === 'mohamed';
+    }
+
+    function portalRoleFor(roleLabel) {
+        const role = String(roleLabel || '');
+        if (role.includes('مشرف')) return 'supervisor';
+        if (role.includes('مدير')) return 'admin';
+        if (role.includes('ولي')) return 'parent';
+        return 'teacher';
+    }
+
+    function portalDisplayName(username, roleLabel) {
+        const role = String(roleLabel || '');
+        const name = String(username || '');
+        if (role.includes('مشرف')) return name + ' (مشرف)';
+        if (role.includes('مدير')) return name.toLowerCase() === 'mohamed' ? 'Dr. Mohamed Mohamed' : name;
+        if (role.includes('ولي')) return name + ' (ولي أمر)';
+        return 'أ. ' + name;
+    }
+
+    // عرض المستخدمين في الجدول
+    function renderUsers() {
+        const tbody = document.getElementById('usersTableBody');
+        const users = loadUsers();
+
+        if (users.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="color: #718096;">لا يوجد مستخدمون حالياً.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = users.map((user, index) => {
+            let badgeClass = 'badge-teacher';
+            if (isSupervisorRole(user.role)) badgeClass = 'badge-supervisor';
+            else if (isDirectorAccount(user)) badgeClass = 'badge-admin';
+            else if (String(user.role || '').includes('ولي')) badgeClass = 'badge-parent';
+
+            const deleteBtn = isPrimaryDirector(user)
+                ? ''
+                : `<button type="button" class="btn-delete" onclick="deleteUser(${index})">حذف</button>`;
+
+            return `
+                <tr>
+                    <td><strong>${escapeHtml(user.username)}</strong></td>
+                    <td class="password-cell"><code>${escapeHtml(user.password)}</code></td>
+                    <td><span class="badge ${badgeClass}">${escapeHtml(user.role)}</span></td>
+                    <td><div class="row-actions"><button type="button" class="btn-edit" onclick="startEdit(${index})">تعديل</button>${deleteBtn}</div></td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function startEdit(index) {
+        const users = loadUsers();
+        const user = users[index];
+        if (!user) return;
+        editingIndex = index;
+        document.getElementById('newUsername').value = user.username;
+        const passwordInput = document.getElementById('newPassword');
+        passwordInput.type = 'text';
+        passwordInput.value = user.password;
+        document.getElementById('newRole').value = user.role;
+        document.getElementById('userFormTitle').textContent = 'تعديل بيانات المستخدم';
+        document.getElementById('userSubmitBtn').textContent = 'حفظ التعديل';
+        document.getElementById('cancelEditBtn').style.display = 'inline-block';
+        document.getElementById('addUserForm').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function cancelEdit() {
+        editingIndex = -1;
+        document.getElementById('addUserForm').reset();
+        document.getElementById('newPassword').type = 'password';
+        document.getElementById('userFormTitle').textContent = 'لوحة تحكم المدير - إضافة مستخدم جديد';
+        document.getElementById('userSubmitBtn').textContent = 'إضافة المستخدم وحفظه';
+        document.getElementById('cancelEditBtn').style.display = 'none';
+    }
+
+    // إضافة مستخدم جديد أو حفظ تعديل
+    function addUser(event) {
+        event.preventDefault();
+        const usernameInput = document.getElementById('newUsername');
+        const passwordInput = document.getElementById('newPassword');
+        const roleSelect = document.getElementById('newRole');
+
+        const username = usernameInput.value.trim();
+        const password = passwordInput.value.trim();
+        const role = roleSelect.value;
+
+        if (!username || !password) {
+            showAlert('يرجى ملء جميع الحقول المطلوبة.', false);
+            return;
+        }
+
+        const users = loadUsers();
+        const current = editingIndex >= 0 ? users[editingIndex] : null;
+        const duplicate = users.some((u, index) => index !== editingIndex && u.username.toLowerCase() === username.toLowerCase());
+        if (duplicate) {
+            showAlert('اسم المستخدم موجود بالفعل، يرجى اختيار اسم آخر.', false);
+            return;
+        }
+
+        if (current) {
+            const oldUsername = current.username;
+            current.username = username;
+            current.password = password;
+            current.role = role;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
+            updatePortalAuth(oldUsername, username, password, role);
+            try {
+                const session = JSON.parse(sessionStorage.getItem('rw_gate_session') || 'null');
+                if (session && String(session.username || '').toLowerCase() === String(oldUsername).toLowerCase()) {
+                    session.username = username;
+                    session.role = role;
+                    sessionStorage.setItem('rw_gate_session', JSON.stringify(session));
+                    if (isDirectorAccount(session)) {
+                        sessionStorage.setItem('rw_admin_gate', '1');
+                        sessionStorage.setItem('rw_manager_gate', '1');
+                    } else if (isSupervisorRole(role)) {
+                        sessionStorage.removeItem('rw_admin_gate');
+                        sessionStorage.setItem('rw_manager_gate', '1');
+                    } else {
+                        sessionStorage.removeItem('rw_admin_gate');
+                        sessionStorage.removeItem('rw_manager_gate');
+                    }
+                }
+            } catch (e) {}
+            cancelEdit();
+            renderUsers();
+            showAlert('تم حفظ التعديل بنجاح ✓', true);
+            return;
+        }
+
+        users.push({ username, password, role });
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
+        syncWithPortalAuth(username, password, role);
+        usernameInput.value = '';
+        passwordInput.value = '';
+        renderUsers();
+        showAlert('تمت إضافة المستخدم وحفظه بنجاح ✓', true);
+    }
+
+    // حذف مستخدم
+    function deleteUser(index) {
+        const users = loadUsers();
+        const user = users[index];
+        if (!user) return;
+        if (isPrimaryDirector(user)) {
+            showAlert('لا يمكن حذف حساب المدير الأساسي.', false);
+            return;
+        }
+
+        if (!confirm(`هل أنت متأكد من رغبتك في حذف المستخدم "${user.username}"؟`)) {
+            return;
+        }
+
+        const removed = users.splice(index, 1)[0];
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
+        removeFromPortalAuth(removed.username);
+        if (editingIndex === index) cancelEdit();
+        renderUsers();
+        showAlert(`تم حذف المستخدم "${removed.username}" بنجاح.`, true);
+    }
+
+    function updatePortalAuth(oldUsername, newUsername, password, roleLabel) {
+        try {
+            let portalData = JSON.parse(localStorage.getItem(PORTAL_USERS_KEY) || 'null');
+            if (!portalData || !Array.isArray(portalData.users)) {
+                syncWithPortalAuth(newUsername, password, roleLabel);
+                return;
+            }
+            const user = portalData.users.find(u => String(u.username || '').toLowerCase() === String(oldUsername).toLowerCase());
+            if (!user) {
+                syncWithPortalAuth(newUsername, password, roleLabel);
+                return;
+            }
+            user.username = newUsername;
+            user.email = newUsername + '@rokn-wajd.example';
+            user.role = portalRoleFor(roleLabel);
+            user.name = portalDisplayName(newUsername, roleLabel);
+            user.passwordHash = '';
+            localStorage.setItem(PORTAL_USERS_KEY, JSON.stringify(portalData));
+        } catch (e) {
+            console.error('Portal update error:', e);
+        }
+    }
+
+    // مزامنة الحساب الجديد تلقائياً مع نظام مصادقة البوابة (portal auth)
+    function syncWithPortalAuth(username, password, roleLabel) {
+        try {
+            let portalData = JSON.parse(localStorage.getItem(PORTAL_USERS_KEY) || 'null');
+            if (!portalData || !Array.isArray(portalData.users)) return;
+
+            const authRole = portalRoleFor(roleLabel);
+            const displayName = portalDisplayName(username, roleLabel);
+
+            // إذا كان المستخدم موجوداً مسبقاً لا نكرره
+            if (portalData.users.some(u => u.username === username)) return;
+
+            // توليد ملح وتشفير SHA-256 مطابق لنظام البوابة
+            const salt = Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2);
+            portalData.users.push({
+                id: 'u_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+                username: username,
+                name: displayName,
+                email: username + '@rokn-wajd.example',
+                role: authRole,
+                salt: salt,
+                passwordHash: simpleSha256(salt + ':' + password),
+                active: true,
+                createdAt: new Date().toISOString()
+            });
+
+            localStorage.setItem(PORTAL_USERS_KEY, JSON.stringify(portalData));
+        } catch (e) {
+            console.error('Portal sync error:', e);
+        }
+    }
+
+    // إزالة المستخدم من مصادقة البوابة
+    function removeFromPortalAuth(username) {
+        try {
+            let portalData = JSON.parse(localStorage.getItem(PORTAL_USERS_KEY) || 'null');
+            if (!portalData || !Array.isArray(portalData.users)) return;
+            portalData.users = portalData.users.filter(u => u.username !== username);
+            localStorage.setItem(PORTAL_USERS_KEY, JSON.stringify(portalData));
+        } catch (e) {}
+    }
+
+    // دالة هروب النصوص لمنع ثغرات XSS
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text == null ? '' : text;
+        return div.innerHTML;
+    }
+
+    // دالة تجزئة مساعدة متوافقة مع متصفحات الويب
+    function simpleSha256(ascii) {
+        function rightRotate(value, amount) {
+            return (value >>> amount) | (value << (32 - amount));
+        }
+        var mathPow = Math.pow;
+        var maxWord = mathPow(2, 32);
+        var lengthProperty = 'length';
+        var i, j;
+        var result = '';
+        var words = [];
+        var asciiBitLength = ascii[lengthProperty] * 8;
+        var hash = [], k = [];
+        var primeCounter = 0;
+        var isComposite = {};
+        for (var candidate = 2; primeCounter < 64; candidate++) {
+            if (!isComposite[candidate]) {
+                for (i = 0; i < 313; i += candidate) isComposite[i] = candidate;
+                hash[primeCounter] = (mathPow(candidate, .5) * maxWord) | 0;
+                k[primeCounter++] = (mathPow(candidate, 1 / 3) * maxWord) | 0;
+            }
+        }
+        ascii += '\x80';
+        while (ascii[lengthProperty] % 64 - 56) ascii += '\x00';
+        for (i = 0; i < ascii[lengthProperty]; i++) {
+            j = ascii.charCodeAt(i);
+            if (j >> 8) return;
+            words[i >> 2] |= j << ((3 - i) % 4) * 8;
+        }
+        words[words[lengthProperty]] = ((asciiBitLength / maxWord) | 0);
+        words[words[lengthProperty]] = (asciiBitLength);
+        for (j = 0; j < words[lengthProperty];) {
+            var w = words.slice(j, j += 16);
+            var oldHash = hash;
+            hash = hash.slice(0, 8);
+            for (i = 0; i < 64; i++) {
+                var w15 = w[i - 15], w2 = w[i - 2];
+                var s0 = rightRotate(w15, 7) ^ rightRotate(w15, 18) ^ (w15 >>> 3);
+                var s1 = rightRotate(w2, 17) ^ rightRotate(w2, 19) ^ (w2 >>> 10);
+                w[i] = (i < 16) ? w[i] : (w[i - 16] + s0 + w[i - 7] + s1) | 0;
+                var s1b = rightRotate(hash[4], 6) ^ rightRotate(hash[4], 11) ^ rightRotate(hash[4], 25);
+                var ch = (hash[4] & hash[5]) ^ (~hash[4] & hash[6]);
+                var temp1 = hash[7] + s1b + ch + k[i] + w[i];
+                var s0b = rightRotate(hash[0], 2) ^ rightRotate(hash[0], 13) ^ rightRotate(hash[0], 22);
+                var maj = (hash[0] & hash[1]) ^ (hash[0] & hash[2]) ^ (hash[1] & hash[2]);
+                var temp2 = s0b + maj;
+                hash = [(temp1 + temp2) | 0].concat(hash);
+                hash[4] = (hash[4] + temp1) | 0;
+            }
+            for (i = 0; i < 8; i++) hash[i] = (hash[i] + oldHash[i]) | 0;
+        }
+        for (i = 0; i < 8; i++) {
+            for (j = 3; j >= 0; j--) {
+                var b = (hash[i] >> (8 * j)) & 255;
+                result += (b < 16 ? '0' : '') + b.toString(16);
+            }
+        }
+        return result;
+    }
+
+    // بدء تشغيل الصفحة
+    window.addEventListener('DOMContentLoaded', function () {
+        initUsers();
+        const gate = document.getElementById('pageAdminGate');
+        const form = document.getElementById('pageAdminGateForm');
+        const msg = document.getElementById('pageGateMsg');
+        let session = null;
+        try { session = JSON.parse(sessionStorage.getItem('rw_gate_session') || 'null'); } catch (e) { session = null }
+        if (session && session.username) {
+            const live = loadUsers().find(item => String(item.username || '').toLowerCase() === String(session.username).toLowerCase());
+            if (live) session = live;
+        }
+        if (session && isSupervisorRole(session.role)) {
+            if (gate) gate.style.background = '#f4f7f6';
+            if (form) {
+                form.innerHTML = '<h2 style="margin:0">غير مصرح</h2><p style="margin:0;color:#742a2a">دور المشرف مخصص لتسجيل الطلاب وتعديل بياناتهم فقط. لا يمكن فتح لوحة الإدارة أو إدارة المستخدمين.</p><p style="margin:0"><a href="../index.html#register">العودة لتسجيل طالب</a></p>';
+            }
+            return;
+        }
+        const sessionIsDirector = session && isDirectorAccount(session);
+        if (gate && (sessionIsDirector || (!session && sessionStorage.getItem('rw_admin_gate') === '1'))) gate.style.display = 'none';
+        if (form) form.addEventListener('submit', function (event) {
+            event.preventDefault();
+            const username = document.getElementById('pageGateUser').value.trim();
+            const pass = document.getElementById('pageGatePass').value;
+            const key = username.toLowerCase();
+            const found = loadUsers().find(item => String(item.username || '').trim().toLowerCase() === key && String(item.password || '') === pass);
+            if (!found) {
+                msg.textContent = 'اسم المستخدم أو كلمة المرور غير صحيحة.';
+                return;
+            }
+            if (isSupervisorRole(found.role) || !isDirectorAccount(found)) {
+                msg.textContent = isSupervisorRole(found.role)
+                    ? 'غير مصرح. دور المشرف مخصص لتسجيل الطلاب وتعديل بياناتهم فقط.'
+                    : 'هذه الصفحة متاحة لحسابات المدير فقط.';
+                return;
+            }
+            sessionStorage.setItem('rw_admin_gate', '1');
+            sessionStorage.setItem('rw_manager_gate', '1');
+            sessionStorage.setItem('rw_gate_session', JSON.stringify({ username: found.username, role: found.role }));
+            gate.style.display = 'none';
+        });
+    });
+</script>
+<p class="dev-sign" dir="ltr">Created by Eng: Ahmed Yamani</p>
+</body>
+</html>

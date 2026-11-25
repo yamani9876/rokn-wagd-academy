@@ -186,6 +186,10 @@
             background-color: #feebc8;
             color: #7b341e;
         }
+        .badge-supervisor {
+            background-color: #bee3f8;
+            color: #2a4365;
+        }
         .badge-protected {
             background-color: #edf2f7;
             color: #718096;
@@ -223,7 +227,7 @@
 <div id="pageAdminGate" style="position:fixed;inset:0;z-index:80;display:grid;place-items:center;background:rgba(13,20,48,.45);padding:20px">
     <form id="pageAdminGateForm" style="background:#fff;border-radius:16px;padding:24px;width:min(420px,100%);display:grid;gap:12px">
         <h2 style="margin:0">دخول المدير</h2>
-        <p style="margin:0;color:#4a5568">إدارة المستخدمين ولوحة المدير متاحتان لحساب المدير فقط.</p>
+        <p style="margin:0;color:#4a5568">إدارة المستخدمين ولوحة المدير متاحتان لأي حساب بدور «مدير». دور «مشرف» لتسجيل الطلاب وتعديل بياناتهم فقط.</p>
         <p id="pageGateMsg" style="margin:0;min-height:1.2rem;color:#c42345"></p>
         <label>اسم المستخدم
             <input id="pageGateUser" required autocomplete="username" style="display:block;width:100%;margin-top:6px;padding:10px;border:1px solid #e2e8f0;border-radius:8px">
@@ -237,7 +241,7 @@
 
 <div class="container">
     <div class="nav-links">
-        <a href="أكاديمية ركن وجد.html">← العودة للرئيسية (أكاديمية ركن وجد)</a>
+        <a href="index.html">← العودة للرئيسية</a>
         <a href="portal/admin.html">لوحة المدير المتقدمة ↗</a>
     </div>
 
@@ -263,6 +267,7 @@
                 <option value="المعلم">معلم</option>
                 <option value="ولي الأمر">ولي أمر</option>
                 <option value="مدير">مدير</option>
+                <option value="مشرف">مشرف</option>
             </select>
         </div>
         
@@ -349,6 +354,31 @@
         return String(user.role || '').includes('مدير');
     }
 
+    function isSupervisorRole(role) {
+        return String(role || '').includes('مشرف');
+    }
+
+    function isPrimaryDirector(user) {
+        return String(user.username || '').trim().toLowerCase() === 'mohamed';
+    }
+
+    function portalRoleFor(roleLabel) {
+        const role = String(roleLabel || '');
+        if (role.includes('مشرف')) return 'supervisor';
+        if (role.includes('مدير')) return 'admin';
+        if (role.includes('ولي')) return 'parent';
+        return 'teacher';
+    }
+
+    function portalDisplayName(username, roleLabel) {
+        const role = String(roleLabel || '');
+        const name = String(username || '');
+        if (role.includes('مشرف')) return name + ' (مشرف)';
+        if (role.includes('مدير')) return name.toLowerCase() === 'mohamed' ? 'Dr. Mohamed Mohamed' : name;
+        if (role.includes('ولي')) return name + ' (ولي أمر)';
+        return 'أ. ' + name;
+    }
+
     // عرض المستخدمين في الجدول
     function renderUsers() {
         const tbody = document.getElementById('usersTableBody');
@@ -361,10 +391,11 @@
 
         tbody.innerHTML = users.map((user, index) => {
             let badgeClass = 'badge-teacher';
-            if (isDirectorAccount(user)) badgeClass = 'badge-admin';
+            if (isSupervisorRole(user.role)) badgeClass = 'badge-supervisor';
+            else if (isDirectorAccount(user)) badgeClass = 'badge-admin';
             else if (String(user.role || '').includes('ولي')) badgeClass = 'badge-parent';
 
-            const deleteBtn = isDirectorAccount(user)
+            const deleteBtn = isPrimaryDirector(user)
                 ? ''
                 : `<button type="button" class="btn-delete" onclick="deleteUser(${index})">حذف</button>`;
 
@@ -441,6 +472,16 @@
                     session.username = username;
                     session.role = role;
                     sessionStorage.setItem('rw_gate_session', JSON.stringify(session));
+                    if (isDirectorAccount(session)) {
+                        sessionStorage.setItem('rw_admin_gate', '1');
+                        sessionStorage.setItem('rw_manager_gate', '1');
+                    } else if (isSupervisorRole(role)) {
+                        sessionStorage.removeItem('rw_admin_gate');
+                        sessionStorage.setItem('rw_manager_gate', '1');
+                    } else {
+                        sessionStorage.removeItem('rw_admin_gate');
+                        sessionStorage.removeItem('rw_manager_gate');
+                    }
                 }
             } catch (e) {}
             cancelEdit();
@@ -463,7 +504,7 @@
         const users = loadUsers();
         const user = users[index];
         if (!user) return;
-        if (isDirectorAccount(user)) {
+        if (isPrimaryDirector(user)) {
             showAlert('لا يمكن حذف حساب المدير الأساسي.', false);
             return;
         }
@@ -494,16 +535,8 @@
             }
             user.username = newUsername;
             user.email = newUsername + '@rokn-wajd.example';
-            if (String(roleLabel).includes('مدير')) {
-                user.role = 'admin';
-                user.name = String(newUsername).toLowerCase() === 'mohamed' ? 'Dr. Mohamed Mohamed' : newUsername;
-            } else if (String(roleLabel).includes('ولي')) {
-                user.role = 'parent';
-                user.name = newUsername + ' (ولي أمر)';
-            } else {
-                user.role = 'teacher';
-                user.name = 'أ. ' + newUsername;
-            }
+            user.role = portalRoleFor(roleLabel);
+            user.name = portalDisplayName(newUsername, roleLabel);
             user.passwordHash = '';
             localStorage.setItem(PORTAL_USERS_KEY, JSON.stringify(portalData));
         } catch (e) {
@@ -517,18 +550,8 @@
             let portalData = JSON.parse(localStorage.getItem(PORTAL_USERS_KEY) || 'null');
             if (!portalData || !Array.isArray(portalData.users)) return;
 
-            let authRole = 'teacher';
-            let displayName = username;
-            if (String(roleLabel).includes('مدير')) {
-                authRole = 'admin';
-                displayName = String(username).toLowerCase() === 'mohamed' ? 'Dr. Mohamed Mohamed' : username;
-            } else if (roleLabel.includes('ولي')) {
-                authRole = 'parent';
-                displayName = username + ' (ولي أمر)';
-            } else {
-                authRole = 'teacher';
-                displayName = 'أ. ' + username;
-            }
+            const authRole = portalRoleFor(roleLabel);
+            const displayName = portalDisplayName(username, roleLabel);
 
             // إذا كان المستخدم موجوداً مسبقاً لا نكرره
             if (portalData.users.some(u => u.username === username)) return;
@@ -632,22 +655,46 @@
 
     // بدء تشغيل الصفحة
     window.addEventListener('DOMContentLoaded', function () {
+        initUsers();
         const gate = document.getElementById('pageAdminGate');
-        if (sessionStorage.getItem('rw_admin_gate') === '1' && gate) gate.style.display = 'none';
         const form = document.getElementById('pageAdminGateForm');
+        const msg = document.getElementById('pageGateMsg');
+        let session = null;
+        try { session = JSON.parse(sessionStorage.getItem('rw_gate_session') || 'null'); } catch (e) { session = null }
+        if (session && session.username) {
+            const live = loadUsers().find(item => String(item.username || '').toLowerCase() === String(session.username).toLowerCase());
+            if (live) session = live;
+        }
+        if (session && isSupervisorRole(session.role)) {
+            if (gate) gate.style.background = '#f4f7f6';
+            if (form) {
+                form.innerHTML = '<h2 style="margin:0">غير مصرح</h2><p style="margin:0;color:#742a2a">دور المشرف مخصص لتسجيل الطلاب وتعديل بياناتهم فقط. لا يمكن فتح لوحة الإدارة أو إدارة المستخدمين.</p><p style="margin:0"><a href="index.html#register">العودة لتسجيل طالب</a></p>';
+            }
+            return;
+        }
+        const sessionIsDirector = session && isDirectorAccount(session);
+        if (gate && (sessionIsDirector || (!session && sessionStorage.getItem('rw_admin_gate') === '1'))) gate.style.display = 'none';
         if (form) form.addEventListener('submit', function (event) {
             event.preventDefault();
-            const user = document.getElementById('pageGateUser').value.trim().toLowerCase();
+            const username = document.getElementById('pageGateUser').value.trim();
             const pass = document.getElementById('pageGatePass').value;
-            if (user === 'mohamed' && pass === '112233') {
-                sessionStorage.setItem('rw_admin_gate', '1');
-                sessionStorage.setItem('rw_manager_gate', '1');
-                gate.style.display = 'none';
-            } else {
-                document.getElementById('pageGateMsg').textContent = 'اسم المستخدم أو كلمة المرور غير صحيحة.';
+            const key = username.toLowerCase();
+            const found = loadUsers().find(item => String(item.username || '').trim().toLowerCase() === key && String(item.password || '') === pass);
+            if (!found) {
+                msg.textContent = 'اسم المستخدم أو كلمة المرور غير صحيحة.';
+                return;
             }
+            if (isSupervisorRole(found.role) || !isDirectorAccount(found)) {
+                msg.textContent = isSupervisorRole(found.role)
+                    ? 'غير مصرح. دور المشرف مخصص لتسجيل الطلاب وتعديل بياناتهم فقط.'
+                    : 'هذه الصفحة متاحة لحسابات المدير فقط.';
+                return;
+            }
+            sessionStorage.setItem('rw_admin_gate', '1');
+            sessionStorage.setItem('rw_manager_gate', '1');
+            sessionStorage.setItem('rw_gate_session', JSON.stringify({ username: found.username, role: found.role }));
+            gate.style.display = 'none';
         });
-        initUsers();
     });
 </script>
 <p class="dev-sign" dir="ltr">Created by Eng: Ahmed Yamani</p>
