@@ -81,10 +81,12 @@
             font-size: 16px;
             font-weight: 600;
             font-family: inherit;
-            transition: background-color 0.2s;
+            transition: background-color .18s ease, transform .18s ease, box-shadow .18s ease;
         }
         button[type="submit"]:hover {
             background-color: #2b6cb0;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(26, 54, 93, .16);
         }
         table {
             width: 100%;
@@ -114,10 +116,12 @@
             cursor: pointer;
             font-family: inherit;
             font-weight: 600;
-            transition: background-color 0.2s;
+            transition: background-color .18s ease, transform .18s ease, box-shadow .18s ease;
         }
         .btn-delete:hover {
             background-color: #c53030;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(26, 54, 93, .16);
         }
         .btn-edit {
             background-color: #3182ce;
@@ -129,8 +133,9 @@
             cursor: pointer;
             font-family: inherit;
             font-weight: 600;
+            transition: background-color .18s ease, transform .18s ease, box-shadow .18s ease;
         }
-        .btn-edit:hover { background-color: #2b6cb0; }
+        .btn-edit:hover { background-color: #2b6cb0; transform: translateY(-2px); box-shadow: 0 8px 16px rgba(26, 54, 93, .16); }
         .row-actions { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
         .btn-cancel {
             background: #edf2f7;
@@ -142,6 +147,12 @@
             font-family: inherit;
             font-weight: 600;
             margin-right: 8px;
+            transition: background-color .18s ease, transform .18s ease, box-shadow .18s ease;
+        }
+        .btn-cancel:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(26, 54, 93, .16); }
+        @media (prefers-reduced-motion: reduce) {
+            button[type="submit"], .btn-edit, .btn-delete, .btn-cancel { transition: none; }
+            button[type="submit"]:hover, .btn-edit:hover, .btn-delete:hover, .btn-cancel:hover { transform: none; box-shadow: none; }
         }
         .dev-sign {
             position: fixed;
@@ -209,14 +220,28 @@
     </style>
 </head>
 <body>
+<div id="pageAdminGate" style="position:fixed;inset:0;z-index:80;display:grid;place-items:center;background:rgba(13,20,48,.45);padding:20px">
+    <form id="pageAdminGateForm" style="background:#fff;border-radius:16px;padding:24px;width:min(420px,100%);display:grid;gap:12px">
+        <h2 style="margin:0">دخول المدير</h2>
+        <p style="margin:0;color:#4a5568">إدارة المستخدمين ولوحة المدير متاحتان لحساب المدير فقط.</p>
+        <p id="pageGateMsg" style="margin:0;min-height:1.2rem;color:#c42345"></p>
+        <label>اسم المستخدم
+            <input id="pageGateUser" required autocomplete="username" style="display:block;width:100%;margin-top:6px;padding:10px;border:1px solid #e2e8f0;border-radius:8px">
+        </label>
+        <label>كلمة المرور
+            <input id="pageGatePass" type="password" required autocomplete="current-password" style="display:block;width:100%;margin-top:6px;padding:10px;border:1px solid #e2e8f0;border-radius:8px">
+        </label>
+        <button type="submit">دخول</button>
+    </form>
+</div>
 
 <div class="container">
     <div class="nav-links">
         <a href="أكاديمية ركن وجد.html">← العودة للرئيسية (أكاديمية ركن وجد)</a>
-        <a href="portal/admin.html">لوحة المديرة المتقدمة ↗</a>
+        <a href="portal/admin.html">لوحة المدير المتقدمة ↗</a>
     </div>
 
-    <h2 id="userFormTitle">لوحة تحكم المديرة (أ/أمل) - إضافة مستخدم جديد</h2>
+    <h2 id="userFormTitle">لوحة تحكم المدير - إضافة مستخدم جديد</h2>
     
     <div id="alertBox" class="alert"></div>
 
@@ -237,7 +262,7 @@
             <select id="newRole">
                 <option value="المعلم">معلم</option>
                 <option value="ولي الأمر">ولي أمر</option>
-                <option value="المديرة (أ/أمل)">مديرة (أ/أمل)</option>
+                <option value="مدير">مدير</option>
             </select>
         </div>
         
@@ -288,21 +313,22 @@
 
         if (!Array.isArray(users) || users.length === 0) {
             users = [
-                { username: 'Admin', password: 'Amal 1985', role: 'المديرة (أ/أمل)' },
+                { username: 'mohamed', password: '112233', role: 'مدير' },
                 { username: 'teacher', password: 'teacher123', role: 'المعلم' },
                 { username: 'parent', password: 'parent123', role: 'ولي الأمر' }
             ];
             localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
         } else {
-            const adminUser = users.find(u => String(u.role || '').includes('المديرة') || String(u.username || '').toLowerCase() === 'admin');
-            if (!adminUser) {
-                users.unshift({ username: 'Admin', password: 'Amal 1985', role: 'المديرة (أ/أمل)' });
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
-            } else if (String(adminUser.username || '').toLowerCase() === 'admin' && adminUser.password === 'admin123') {
-                adminUser.password = 'Amal 1985';
-                adminUser.role = 'المديرة (أ/أمل)';
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
+            let changed = false;
+            users.forEach(u => { if (String(u.role || '').includes('المديرة')) { u.role = 'مدير'; changed = true } });
+            const mainAdmin = users.find(u => String(u.username || '').toLowerCase() === 'mohamed');
+            if (!mainAdmin) {
+                const legacy = users.find(u => String(u.username || '').toLowerCase() === 'admin');
+                if (legacy) { legacy.username = 'mohamed'; legacy.password = '112233'; legacy.role = 'مدير'; }
+                else users.unshift({ username: 'mohamed', password: '112233', role: 'مدير' });
+                changed = true;
             }
+            if (changed) localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
         }
 
         renderUsers();
@@ -320,7 +346,7 @@
     }
 
     function isDirectorAccount(user) {
-        return String(user.role || '').includes('المديرة');
+        return String(user.role || '').includes('مدير');
     }
 
     // عرض المستخدمين في الجدول
@@ -373,7 +399,7 @@
         editingIndex = -1;
         document.getElementById('addUserForm').reset();
         document.getElementById('newPassword').type = 'password';
-        document.getElementById('userFormTitle').textContent = 'لوحة تحكم المديرة (أ/أمل) - إضافة مستخدم جديد';
+        document.getElementById('userFormTitle').textContent = 'لوحة تحكم المدير - إضافة مستخدم جديد';
         document.getElementById('userSubmitBtn').textContent = 'إضافة المستخدم وحفظه';
         document.getElementById('cancelEditBtn').style.display = 'none';
     }
@@ -438,7 +464,7 @@
         const user = users[index];
         if (!user) return;
         if (isDirectorAccount(user)) {
-            showAlert('لا يمكن حذف حساب المديرة الأساسي.', false);
+            showAlert('لا يمكن حذف حساب المدير الأساسي.', false);
             return;
         }
 
@@ -468,9 +494,9 @@
             }
             user.username = newUsername;
             user.email = newUsername + '@rokn-wajd.example';
-            if (String(roleLabel).includes('المديرة')) {
+            if (String(roleLabel).includes('مدير')) {
                 user.role = 'admin';
-                user.name = 'أ/أمل';
+                user.name = String(newUsername).toLowerCase() === 'mohamed' ? 'Dr. Mohamed Mohamed' : newUsername;
             } else if (String(roleLabel).includes('ولي')) {
                 user.role = 'parent';
                 user.name = newUsername + ' (ولي أمر)';
@@ -493,9 +519,9 @@
 
             let authRole = 'teacher';
             let displayName = username;
-            if (roleLabel.includes('المديرة')) {
+            if (String(roleLabel).includes('مدير')) {
                 authRole = 'admin';
-                displayName = 'أ/أمل';
+                displayName = String(username).toLowerCase() === 'mohamed' ? 'Dr. Mohamed Mohamed' : username;
             } else if (roleLabel.includes('ولي')) {
                 authRole = 'parent';
                 displayName = username + ' (ولي أمر)';
@@ -605,8 +631,25 @@
     }
 
     // بدء تشغيل الصفحة
-    window.addEventListener('DOMContentLoaded', initUsers);
+    window.addEventListener('DOMContentLoaded', function () {
+        const gate = document.getElementById('pageAdminGate');
+        if (sessionStorage.getItem('rw_admin_gate') === '1' && gate) gate.style.display = 'none';
+        const form = document.getElementById('pageAdminGateForm');
+        if (form) form.addEventListener('submit', function (event) {
+            event.preventDefault();
+            const user = document.getElementById('pageGateUser').value.trim().toLowerCase();
+            const pass = document.getElementById('pageGatePass').value;
+            if (user === 'mohamed' && pass === '112233') {
+                sessionStorage.setItem('rw_admin_gate', '1');
+                sessionStorage.setItem('rw_manager_gate', '1');
+                gate.style.display = 'none';
+            } else {
+                document.getElementById('pageGateMsg').textContent = 'اسم المستخدم أو كلمة المرور غير صحيحة.';
+            }
+        });
+        initUsers();
+    });
 </script>
-<p class="dev-sign" dir="ltr">Created by Eng: Ahmed Yamani | Phone: +966511870403</p>
+<p class="dev-sign" dir="ltr">Created by Eng: Ahmed Yamani</p>
 </body>
 </html>
