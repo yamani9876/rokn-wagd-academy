@@ -78,11 +78,20 @@
       color: #fff;
       border: 0;
       cursor: pointer;
-      transition: transform .15s
+      transition: transform .18s ease, box-shadow .18s ease, filter .18s ease
     }
 
     .btn:hover {
-      transform: translateY(-2px)
+      transform: translateY(-2px);
+      box-shadow: 0 10px 18px rgba(20, 36, 107, .16)
+    }
+
+    .tab {
+      transition: transform .18s ease, background-color .18s ease, color .18s ease
+    }
+
+    .tab:hover {
+      transform: translateY(-1px)
     }
 
     .btn:focus-visible,
@@ -162,8 +171,12 @@
         animation: none
       }
 
-      .btn {
+      .btn, .tab {
         transition: none
+      }
+
+      .btn:hover, .tab:hover {
+        transform: none
       }
     }
 
@@ -210,13 +223,32 @@
         var(--bg)
     }
 
-    body.authed .login-gate {
+    .login-gate {
       display: none
     }
 
-    body:not(.authed) header,
-    body:not(.authed) main {
-      visibility: hidden
+    .access-prompt {
+      position: fixed;
+      inset: 0;
+      z-index: 85;
+      display: grid;
+      place-items: center;
+      padding: 1.25rem;
+      background: rgba(13, 20, 48, .45)
+    }
+
+    .access-prompt[hidden] {
+      display: none
+    }
+
+    .fixed-admin-actions {
+      position: fixed;
+      z-index: 40;
+      top: calc(4.6rem + env(safe-area-inset-top, 0px));
+      inset-inline-end: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: .5rem
     }
 
     .only-director { display: none }
@@ -322,7 +354,7 @@
     <div class="card p-5 w-full max-w-md">
       <p class="hd text-sm" style="color:var(--cyan)">أكاديمية ركن وجد</p>
       <h1 id="gateTitle" class="text-3xl mt-1">تسجيل الدخول</h1>
-      <p class="mt-2 mb-4" style="color:var(--mute)">الحسابات يديرها حساب المديرة أ/أمل. لن تُفتح لوحة الأكاديمية قبل التحقق.</p>
+      <p class="mt-2 mb-4" style="color:var(--mute)">الحسابات يديرها المدير. لن تُفتح لوحة الأكاديمية قبل التحقق.</p>
       <p id="gateError" role="alert" class="mb-2" style="color:#c42345;min-height:1.25rem"></p>
       <form id="gateForm" class="grid gap-3">
         <label class="grid gap-1 font-bold">اسم المستخدم
@@ -359,6 +391,10 @@
       </div>
     </div>
   </header>
+  <div class="fixed-admin-actions">
+    <button type="button" class="btn b-blue !py-2 !px-3 text-sm" id="fixedUsersBtn">إدارة المستخدمين</button>
+    <button type="button" class="btn b-ghost !py-2 !px-3 text-sm" id="fixedAdminBtn">لوحة الإدارة</button>
+  </div>
 
   <main class="max-w-6xl mx-auto px-4 pb-16">
 
@@ -372,7 +408,7 @@
         <p class="mt-2 text-lg" style="color:var(--mute)"><span data-i18n="director"></span>: <b
             data-i18n="directorName"></b></p>
         <p class="mt-1 hd text-xl" style="color:var(--pink)" data-i18n="motto"></p>
-        <p class="only-director mt-4"><a class="btn b-blue" href="users.html">إدارة المستخدمين</a></p>
+        <p class="mt-4"><a class="btn b-blue" id="openUsersLink" href="users.html">إدارة المستخدمين</a></p>
       </div>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-8" id="homeBtns"></div>
     </section>
@@ -480,12 +516,31 @@
       </div>
     </section>
   </main>
+  <div id="accessPrompt" class="access-prompt" hidden>
+    <div class="card p-5 w-full max-w-md">
+      <h2 id="accessTitle" class="text-2xl mb-2">دخول المدير</h2>
+      <p id="accessHint" class="mb-3" style="color:var(--mute)"></p>
+      <p id="accessError" role="alert" class="mb-2" style="color:#c42345;min-height:1.25rem"></p>
+      <form id="accessForm" class="grid gap-3">
+        <label class="grid gap-1 font-bold">اسم المستخدم
+          <input class="inp" id="accessUser" autocomplete="username" required maxlength="80">
+        </label>
+        <label class="grid gap-1 font-bold">كلمة المرور
+          <input class="inp" id="accessPass" type="password" autocomplete="current-password" required maxlength="72">
+        </label>
+        <div class="flex gap-2">
+          <button class="btn b-blue" type="submit">دخول</button>
+          <button class="btn b-ghost" type="button" id="accessCancel">إلغاء</button>
+        </div>
+      </form>
+    </div>
+  </div>
   <div id="toast" role="status"></div>
 
   <script>
     const D = {
       ar: {
-        name: "أكاديمية ركن وجد", welcome: "أهلاً بكم في أكاديمية ركن وجد", director: "المديرة", directorName: "أ/أمل", motto: "تعلّم • انمُ • تألّق",
+        name: "أكاديمية ركن وجد", welcome: "أهلاً بكم في أكاديمية ركن وجد", director: "Manager", directorName: "Dr. Mohamed Mohamed", motto: "تعلّم • انمُ • تألّق",
         login: "تسجيل الدخول", register: "تسجيل طالب جديد", stages: "المرحلة التعليمية", live: "الحصص الأونلاين", library: "المكتبة التعليمية", contact: "تواصل معنا", about: "نبذة عن الأكاديمية ورسالتها", admin: "لوحة الإدارة",
         student: "طالب", teacher: "معلم", username: "اسم المستخدم", password: "كلمة المرور", fullName: "الاسم الكامل", parentPhone: "هاتف ولي الأمر", submitReg: "إرسال الطلب", email: "البريد الإلكتروني", message: "رسالتك", send: "إرسال الرسالة",
         todaySched: "جدول حصص اليوم", recorded: "المحاضرات المسجلة", join: "انضم للحصة الآن", watch: "شاهد", liveNow: "مباشر الآن", later: "قريباً", all: "الكل", videos: "فيديو", upload: "رفع الملف", fileTitle: "عنوان الملف", open: "فتح",
@@ -495,7 +550,7 @@
         ok: "تم بنجاح ✓", joinMsg: "جارٍ تحويلك إلى حصة Zoom المباشرة…", need: "اختر ملفاً أولاً", grp: "المرحلة", mission: "رسالتنا", zoomTitle: "إدارة رابط Zoom", zoomHint: "يُستخدم هذا الرابط لحضور الحصص المباشرة. لا توجد محاضرات مسجلة في هذا القسم.", saveZoom: "حفظ رابط Zoom"
       },
       en: {
-        name: "Rokn Wajd Academy", welcome: "Welcome to Rokn Wajd Academy", director: "Director", directorName: "A/Amal", motto: "Learn • Grow • Shine",
+        name: "Rokn Wajd Academy", welcome: "Welcome to Rokn Wajd Academy", director: "Manager", directorName: "Dr. Mohamed Mohamed", motto: "Learn • Grow • Shine",
         login: "Log in", register: "Register new student", stages: "Learning stages", live: "Live classes", library: "Learning library", contact: "Contact us", about: "About & mission", admin: "Admin panel",
         student: "Student", teacher: "Teacher", username: "Username", password: "Password", fullName: "Full name", parentPhone: "Parent phone", submitReg: "Send request", email: "Email", message: "Your message", send: "Send message",
         todaySched: "Today's class schedule", recorded: "Recorded lectures", join: "Join class now", watch: "Watch", liveNow: "Live now", later: "Upcoming", all: "All", videos: "Videos", upload: "Upload file", fileTitle: "File title", open: "Open",
@@ -514,7 +569,12 @@
     let lib = [{ t: 'أنشودة الحروف', k: 'video', u: '' }, { t: 'ورقة عمل الرياضيات', k: 'pdf', u: '' }];
     const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
     function toast(m) { const e = $('#toast'); e.textContent = m; e.style.display = 'block'; clearTimeout(toast.x); toast.x = setTimeout(() => e.style.display = 'none', 2200) }
-    function go(v) { $$('.view').forEach(e => e.classList.toggle('on', e.id === v)); scrollTo(0, 0); if (location.hash !== '#' + v) history.replaceState(null, '', '#' + v) }
+    function showView(v) { $$('.view').forEach(e => e.classList.toggle('on', e.id === v)); scrollTo(0, 0); if (location.hash !== '#' + v) history.replaceState(null, '', '#' + v) }
+    function go(v) {
+      if (v === 'admin' && sessionStorage.getItem('rw_admin_gate') !== '1') { openAccessPrompt('admin', function () { showView('admin') }); return }
+      if (v === 'register' && sessionStorage.getItem('rw_manager_gate') !== '1') { openAccessPrompt('manager', function () { showView('register') }); return }
+      showView(v)
+    }
     const HB = [['register', '✏️', 'b-pink'], ['stages', '🎓', 'b-cyan'], ['live', '📹', 'b-sun'], ['library', '📚', 'b-blue'], ['contact', '💬', 'b-pink'], ['about', '⭐', 'b-cyan'], ['admin', '⚙️', 'b-ghost']];
     function home() { $('#homeBtns').innerHTML = HB.map(([v, i, c]) => `<button class="btn ${c} !py-5 text-lg flex-col" onclick="go('${v}')"><span class="text-3xl">${i}</span>${t(v)}</button>`).join('') }
     let curStage = 'KG1';
@@ -623,21 +683,20 @@
       let users = readAcademyUsers();
       if (!users || !users.length) {
         users = [
-          { username: 'Admin', password: 'Amal 1985', role: 'المديرة (أ/أمل)' },
+          { username: 'mohamed', password: '112233', role: 'مدير' },
           { username: 'teacher', password: 'teacher123', role: 'المعلم' },
           { username: 'parent', password: 'parent123', role: 'ولي الأمر' }
         ];
         localStorage.setItem(ACADEMY_USERS_KEY, JSON.stringify(users));
         return users;
       }
-      const adminUser = users.find(u => String(u.role || '').includes('المديرة') || String(u.username || '').toLowerCase() === 'admin');
       let changed = false;
-      if (!adminUser) {
-        users.unshift({ username: 'Admin', password: 'Amal 1985', role: 'المديرة (أ/أمل)' });
-        changed = true;
-      } else if (String(adminUser.username || '').toLowerCase() === 'admin' && adminUser.password === 'admin123') {
-        adminUser.password = 'Amal 1985';
-        adminUser.role = 'المديرة (أ/أمل)';
+      users.forEach(u => { if (String(u.role || '').includes('المديرة')) { u.role = 'مدير'; changed = true } });
+      let mainAdmin = users.find(u => String(u.username || '').toLowerCase() === 'mohamed');
+      if (!mainAdmin) {
+        const legacy = users.find(u => String(u.username || '').toLowerCase() === 'admin');
+        if (legacy) { legacy.username = 'mohamed'; legacy.password = '112233'; legacy.role = 'مدير'; }
+        else users.unshift({ username: 'mohamed', password: '112233', role: 'مدير' });
         changed = true;
       }
       if (changed) localStorage.setItem(ACADEMY_USERS_KEY, JSON.stringify(users));
@@ -650,7 +709,7 @@
     }
     function paintSession(user) {
       document.body.classList.add('authed');
-      document.body.classList.toggle('director', String(user.role || '').includes('المديرة'));
+      document.body.classList.toggle('director', String(user.role || '').includes('مدير') || sessionStorage.getItem('rw_admin_gate') === '1');
       const bar = document.getElementById('userHeaderBar');
       if (bar) { bar.classList.remove('hidden'); bar.classList.add('flex') }
       const badge = document.getElementById('userBadgeText');
@@ -697,10 +756,71 @@
       if (err) err.textContent = '';
       acceptLogin(user);
     });
+    function isMainAdminLogin(username, password) {
+      return String(username || '').trim().toLowerCase() === 'mohamed' && String(password || '') === '112233';
+    }
+    function isManagerLogin(username, password) {
+      if (isMainAdminLogin(username, password)) return true;
+      const key = String(username || '').trim().toLowerCase();
+      const pass = String(password || '');
+      return (readAcademyUsers() || []).some(item => String(item.username || '').trim().toLowerCase() === key && String(item.password || '') === pass && String(item.role || '').includes('مدير'));
+    }
+    let accessNext = null;
+    function openAccessPrompt(mode, next) {
+      accessNext = function () {
+        if (mode === 'admin') {
+          sessionStorage.setItem('rw_admin_gate', '1');
+          sessionStorage.setItem('rw_manager_gate', '1');
+          document.body.classList.add('director');
+        } else sessionStorage.setItem('rw_manager_gate', '1');
+        if (next) next();
+      };
+      document.getElementById('accessTitle').textContent = mode === 'admin' ? 'دخول المدير' : 'تسجيل طالب جديد';
+      document.getElementById('accessHint').textContent = mode === 'admin'
+        ? 'إدارة المستخدمين ولوحة الإدارة متاحتان للمدير فقط.'
+        : 'تسجيل طالب جديد متاح للمدير أو لأي حساب بدور «مدير».';
+      document.getElementById('accessError').textContent = '';
+      document.getElementById('accessForm').dataset.mode = mode;
+      document.getElementById('accessPrompt').hidden = false;
+      document.getElementById('accessUser').focus();
+    }
+    function closeAccessPrompt() {
+      document.getElementById('accessPrompt').hidden = true;
+      document.getElementById('accessForm').reset();
+    }
+    function guardUsersLink(event) {
+      if (sessionStorage.getItem('rw_admin_gate') === '1') {
+        if (!event.currentTarget || event.currentTarget.tagName !== 'A') location.href = 'users.html';
+        return;
+      }
+      event.preventDefault();
+      openAccessPrompt('admin', function () { location.href = 'users.html' });
+    }
+    const openUsersLink = document.getElementById('openUsersLink');
+    if (openUsersLink) openUsersLink.addEventListener('click', guardUsersLink);
+    const fixedUsersBtn = document.getElementById('fixedUsersBtn');
+    if (fixedUsersBtn) fixedUsersBtn.addEventListener('click', guardUsersLink);
+    const fixedAdminBtn = document.getElementById('fixedAdminBtn');
+    if (fixedAdminBtn) fixedAdminBtn.addEventListener('click', function () { go('admin') });
+    const accessCancel = document.getElementById('accessCancel');
+    if (accessCancel) accessCancel.addEventListener('click', closeAccessPrompt);
+    const accessForm = document.getElementById('accessForm');
+    if (accessForm) accessForm.addEventListener('submit', function (event) {
+      event.preventDefault();
+      const mode = accessForm.dataset.mode || 'admin';
+      const username = document.getElementById('accessUser').value;
+      const password = document.getElementById('accessPass').value;
+      const ok = mode === 'admin' ? isMainAdminLogin(username, password) : isManagerLogin(username, password);
+      if (!ok) { document.getElementById('accessError').textContent = 'اسم المستخدم أو كلمة المرور غير صحيحة.'; return }
+      const next = accessNext;
+      closeAccessPrompt();
+      if (next) next();
+    });
     bootGate();
+    if (sessionStorage.getItem('rw_admin_gate') === '1') document.body.classList.add('director');
     i18n(); const h = location.hash.slice(1); if (h && document.getElementById(h)) go(h);
   </script>
-<p class="dev-sign" dir="ltr">Created by Eng: Ahmed Yamani | Phone: +966511870403</p>
+<p class="dev-sign" dir="ltr">Created by Eng: Ahmed Yamani</p>
 </body>
 
 </html>
