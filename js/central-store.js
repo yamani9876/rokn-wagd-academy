@@ -27,11 +27,19 @@
     var opts = { method: method || "GET", headers: headers };
     if (body) opts.body = JSON.stringify(body);
     return fetch(path, opts).then(function (res) {
-      return res.json().catch(function () {
-        return { ok: false, offline: true, message: OFFLINE };
+      return res.text().then(function (text) {
+        try {
+          var data = text ? JSON.parse(text) : null;
+          if (data && typeof data === "object") {
+            if (data.ok === false && !data.message && data.error) data.message = String(data.error);
+            if (data.ok === false && !data.message) data.message = "HTTP " + res.status;
+            return data;
+          }
+        } catch (error) { /* the body is not JSON */ }
+        return { ok: false, message: "HTTP " + res.status + " " + String(text || "").slice(0, 500) };
       });
-    }).catch(function () {
-      return { ok: false, offline: true, message: OFFLINE };
+    }).catch(function (error) {
+      return { ok: false, message: error && error.message ? String(error.message) : OFFLINE };
     });
   }
 
