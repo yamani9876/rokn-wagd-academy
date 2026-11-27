@@ -574,6 +574,8 @@
   </div>
   <div id="toast" role="status"></div>
 
+  <script src="js/central-auth.js"></script>
+  <script src="js/central-store.js"></script>
   <script>
     const D = {
       ar: {
@@ -601,8 +603,7 @@
     const ST = [...['KG1', 'KG2'], ...Array.from({ length: 10 }, (_, i) => 'G' + (i + 1))];
     const stName = s => s.startsWith('KG') ? t('kg') + ' ' + s.slice(2) : t('grade') + ' ' + s.slice(1);
     const subj = s => s.startsWith('KG') ? ['phon', 'en', 'math', 'art'] : +s.slice(1) <= 6 ? ['ar', 'en', 'math', 'sci', 'art'] : ['ar', 'en', 'math', 'sci', 'cmp', 'soc', 'isl'];
-    const db = { students: [{ n: 'سارة أحمد', s: 'G3', phone: '', startDate: '', endDate: '', renewalDate: '', fees: '', paidAmount: '' }, { n: 'Omar Ali', s: 'KG2', phone: '', startDate: '', endDate: '', renewalDate: '', fees: '', paidAmount: '' }], teachers: [{ n: 'أ. منى', s: 's_ar' }, { n: 'Mr. Adam', s: 's_en' }], classes: [{ n: 'KG1 - A', s: 'KG1' }, { n: 'Grade 5 - B', s: 'G5' }] };
-    const ACADEMY_DB_KEY = 'rw_academy_db_v1';
+    const db = { students: [], teachers: [], classes: [], zoomLink: '', loaded: false };
     const sched = [['09:00', 'ar', 'KG1', 'أ. منى'], ['10:00', 'en', 'G3', 'Mr. Adam'], ['11:30', 'math', 'G5', 'أ. هدى'], ['01:00', 'sci', 'G7', 'Mr. Sami']];
     let lib = [{ t: 'أنشودة الحروف', k: 'video', u: '' }, { t: 'ورقة عمل الرياضيات', k: 'pdf', u: '' }];
     const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
@@ -613,7 +614,6 @@
       if (v === 'admin') {
         if ((user && isSupervisorRole(user.role)) || document.body.classList.contains('supervisor')) { toast(t('supervisorDenied')); return }
         if (user && isDirectorRole(user.role)) { showView('admin'); return }
-        if (!user && sessionStorage.getItem('rw_admin_gate') === '1') { showView('admin'); return }
         openAccessPrompt('admin', function () { showView('admin') });
         return
       }
@@ -634,29 +634,8 @@
       $('#stageTabs').innerHTML = ST.map(s => `<button class="tab ${s === curStage ? 'on' : ''}" onclick="curStage='${s}';stages()">${stName(s)}</button>`).join('');
       $('#stageBox').innerHTML = `<h3 class="text-xl mb-3">${stName(curStage)} — ${t('subjects')}</h3><div class="grid grid-cols-2 md:grid-cols-4 gap-3">${subj(curStage).map((k, i) => `<button class="card p-4 text-center cursor-pointer" style="color:var(--ink);border-bottom:5px solid ${['var(--cyan)', 'var(--pink)', 'var(--sun)', 'var(--blue)'][i % 4]}" onclick="go('live')"><b>${t('s_' + k)}</b></button>`).join('')}</div>`
     }
-    function getTeacherZoom(tc) {
-      try {
-        const d = localStorage.getItem('rw_zoom_link');
-        if (d && d.trim()) return d.trim();
-        if (tc) {
-          const pt = localStorage.getItem('rw_zoom_link_' + tc);
-          if (pt && pt.trim()) return pt.trim();
-        }
-        const raw = localStorage.getItem('rw_data_v1');
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (parsed) {
-            if (tc && parsed.zoomLinks && parsed.zoomLinks[tc]) return parsed.zoomLinks[tc].trim();
-            if (parsed.settings && parsed.settings.zoomLink) return parsed.settings.zoomLink.trim();
-            if (parsed.zoomLinks) {
-              for (let k in parsed.zoomLinks) {
-                if (parsed.zoomLinks[k]) return parsed.zoomLinks[k].trim();
-              }
-            }
-          }
-        }
-      } catch (e) { }
-      return '';
+    function getTeacherZoom() {
+      return String(db.zoomLink || '').trim();
     }
     function openLiveClass(teacherName) {
       let link = getTeacherZoom(teacherName);
@@ -676,7 +655,7 @@
     function live() {
       const input = $('#zoomLinkInput');
       if (input && document.activeElement !== input) {
-        try { input.value = localStorage.getItem('rw_zoom_link') || '' } catch (e) { }
+        input.value = db.zoomLink || '';
       }
       $('#sched').innerHTML = sched.map(([tm, k, s, tc], i) => `<div class="card p-4 flex flex-wrap items-center justify-between gap-3"><div><b class="text-lg">${tm} — ${t('s_' + k)}</b><div style="color:var(--mute)">${stName(s)} · ${tc}</div></div><div class="flex items-center gap-3">${i == 0 ? `<span><span class="dot"></span> ${t('liveNow')}</span>` : `<span style="color:var(--mute)">${t('later')}</span>`}<button class="btn b-pink" onclick="openLiveClass('${tc.replace(/'/g, "\\'")}')">${t('join')}</button></div></div>`).join('');
     }
@@ -717,16 +696,40 @@
         remainingAmount: remainingAmount(safeFees, safePaid)
       };
     }
-    function saveDb() {
-      try { localStorage.setItem(ACADEMY_DB_KEY, JSON.stringify({ students: db.students, teachers: db.teachers, classes: db.classes })) } catch (e) { }
+    function academyPayload() {
+      return { students: db.students, teachers: db.teachers, classes: db.classes, zoomLink: db.zoomLink || '' };
     }
-    function loadDb() {
-      let raw = null;
-      try { raw = JSON.parse(localStorage.getItem(ACADEMY_DB_KEY) || 'null') } catch (e) { raw = null }
-      if (!raw || typeof raw !== 'object') { db.students = db.students.map(normalizeStudent); saveDb(); return }
-      if (Array.isArray(raw.students)) db.students = raw.students.map(normalizeStudent);
-      if (Array.isArray(raw.teachers)) db.teachers = raw.teachers.map(x => ({ n: x.n || x.name || '', s: x.s || '' }));
-      if (Array.isArray(raw.classes)) db.classes = raw.classes.map(x => ({ n: x.n || x.name || '', s: x.s || '' }));
+    function applyAcademy(academy) {
+      if (!academy) return;
+      if (Array.isArray(academy.students)) db.students = academy.students.map(normalizeStudent);
+      if (Array.isArray(academy.teachers)) db.teachers = academy.teachers.map(x => ({ n: x.n || x.name || '', s: x.s || '' }));
+      if (Array.isArray(academy.classes)) db.classes = academy.classes.map(x => ({ n: x.n || x.name || '', s: x.s || '' }));
+      db.zoomLink = academy.zoomLink || '';
+      db.loaded = true;
+    }
+    function saveFailed(result) {
+      return (result && result.message) || (window.RoknStore ? RoknStore.offlineMessage() : 'تعذر حفظ البيانات في قاعدة البيانات المركزية. لم يُحفظ التغيير على هذا الجهاز.');
+    }
+    function saveDb() {
+      if (!db.loaded) return Promise.resolve({ ok: false, message: 'تعذر حفظ البيانات لأن السجل المركزي لم يُحمّل. أعد تحميل الصفحة.' });
+      if (!window.RoknStore) return Promise.resolve({ ok: false, message: saveFailed() });
+      return RoknStore.save({ academy: academyPayload() }).then(result => {
+        if (!result || !result.ok) return result || { ok: false, message: saveFailed() };
+        if (result.academy) applyAcademy(result.academy);
+        return result;
+      });
+    }
+    function loadDb(quiet) {
+      if (!window.RoknStore || !window.RoknAuth || !RoknAuth.current()) return Promise.resolve({ ok: true, skipped: true });
+      return RoknStore.load().then(result => {
+        if (!result || !result.ok) {
+          db.loaded = false;
+          if (!quiet) toast(saveFailed(result));
+          return result;
+        }
+        applyAcademy(result.academy);
+        return result;
+      });
     }
     function readStudentFields(fields) {
       const name = String(fields.n || '').trim();
@@ -824,6 +827,8 @@
       admin();
     }
     function commitStudent(parsed) {
+      const previous = db.students.map(student => Object.assign({}, student));
+      const previousEdit = editingIndex;
       const record = Object.assign({}, parsed.student);
       if (editingIndex >= 0 && db.students[editingIndex]) {
         record.id = db.students[editingIndex].id;
@@ -833,21 +838,35 @@
         if (!record.id) record.id = 'stu_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
         db.students.push(record);
       }
-      saveDb();
-      clearStudentForms();
-      admin();
-      toast(t('ok'));
+      saveDb().then(result => {
+        if (!result || !result.ok) {
+          db.students = previous;
+          editingIndex = previousEdit;
+          admin();
+          toast(saveFailed(result));
+          return;
+        }
+        clearStudentForms();
+        admin();
+        toast(t('ok'));
+      });
     }
     function removeAcademyRecord(kind, index) {
       if (!canManageAdmin()) { toast(t('accessDenied')); return }
       if (!db[kind] || !db[kind][index]) return;
+      const previous = db[kind].map(item => Object.assign({}, item));
       db[kind].splice(index, 1);
       if (kind === 'students') {
         if (index === editingIndex) editingIndex = -1;
         else if (index < editingIndex) editingIndex -= 1;
       }
-      saveDb();
-      admin();
+      saveDb().then(result => {
+        if (!result || !result.ok) {
+          db[kind] = previous;
+          toast(saveFailed(result));
+        }
+        admin();
+      });
     }
     function studentCard(x, i) {
       const lab = !x.s ? '—' : (String(x.s).startsWith('s_') ? t(x.s) : stName(x.s));
@@ -897,14 +916,17 @@
         toast(L === 'ar' ? 'أدخل رابطاً يبدأ بـ https://' : 'Enter a link that starts with https://');
         return;
       }
-      try {
-        if (value) localStorage.setItem('rw_zoom_link', value);
-        else localStorage.removeItem('rw_zoom_link');
-      } catch (e) {
-        toast(L === 'ar' ? 'تعذر حفظ الرابط.' : 'Could not save the link.');
-        return;
-      }
-      toast(t('ok'));
+      const previous = db.zoomLink;
+      db.zoomLink = value;
+      saveDb().then(result => {
+        if (!result || !result.ok) {
+          db.zoomLink = previous;
+          if (input) input.value = previous || '';
+          toast(saveFailed(result));
+          return;
+        }
+        toast(t('ok'));
+      });
     };
     $('#fReg').onsubmit = e => {
       e.preventDefault();
@@ -929,76 +951,32 @@
       if (!canManageAdmin()) { toast(t('accessDenied')); return }
       const name = $('#adName').value.trim();
       if (name.length < 2) { toast(L === 'ar' ? 'اكتب اسماً صالحاً.' : 'Enter a valid name.'); return }
+      const previous = db[adT].map(item => Object.assign({}, item));
       db[adT].push({ n: name, s: $('#adSel').value });
       $('#adName').value = '';
-      saveDb();
-      admin();
-      toast(t('ok'))
+      saveDb().then(result => {
+        if (!result || !result.ok) {
+          db[adT] = previous;
+          toast(saveFailed(result));
+          admin();
+          return;
+        }
+        admin();
+        toast(t('ok'));
+      });
     };
     ['adFees', 'adPaid'].forEach(id => { const el = document.getElementById(id); if (el) el.addEventListener('input', () => paintRemain('adFees', 'adPaid', 'adRemain')) });
     const adCancel = document.getElementById('adCancel');
     if (adCancel) adCancel.addEventListener('click', cancelStudentEdit);
     $('#upBtn').onclick = () => { const f = $('#fileIn').files[0]; if (!f) return toast(t('need')); lib.unshift({ t: $('#fileTitle').value || f.name, k: f.type === 'application/pdf' ? 'pdf' : 'video', u: URL.createObjectURL(f) }); $('#fileIn').value = ''; $('#fileTitle').value = ''; libr(); toast(t('ok')) };
     $$('[data-f]').forEach(b => b.onclick = () => { lf = b.dataset.f; $$('[data-f]').forEach(x => x.classList.toggle('on', x === b)); libr() });
-    const ACADEMY_USERS_KEY = 'academy_users';
     const GATE_SESSION_KEY = 'rw_gate_session';
-    function readAcademyUsers() {
-      try {
-        const users = JSON.parse(localStorage.getItem(ACADEMY_USERS_KEY) || 'null');
-        return Array.isArray(users) ? users : null;
-      } catch (e) { return null }
-    }
-    /* Same account list the director edits in users.html. */
-    function ensureAcademyUsers() {
-      let users = readAcademyUsers();
-      if (!users || !users.length) {
-        users = [
-          { username: 'mohamed', password: '112233', role: 'مدير' },
-          { username: 'teacher', password: 'teacher123', role: 'المعلم' },
-          { username: 'parent', password: 'parent123', role: 'ولي الأمر' }
-        ];
-        localStorage.setItem(ACADEMY_USERS_KEY, JSON.stringify(users));
-        return users;
-      }
-      let changed = false;
-      users.forEach(u => { if (String(u.role || '').includes('المديرة')) { u.role = 'مدير'; changed = true } });
-      let mainAdmin = users.find(u => String(u.username || '').toLowerCase() === 'mohamed');
-      if (!mainAdmin) {
-        const legacy = users.find(u => String(u.username || '').toLowerCase() === 'admin');
-        if (legacy) { legacy.username = 'mohamed'; legacy.password = '112233'; legacy.role = 'مدير'; }
-        else users.unshift({ username: 'mohamed', password: '112233', role: 'مدير' });
-        changed = true;
-      }
-      if (changed) localStorage.setItem(ACADEMY_USERS_KEY, JSON.stringify(users));
-      return users;
-    }
-    function findAcademyUser(username, password) {
-      const key = String(username || '').trim().toLowerCase();
-      const pass = String(password || '').trim();
-      return ensureAcademyUsers().find(u => String(u.username || '').trim().toLowerCase() === key && String(u.password || '') === pass) || null;
-    }
     function isDirectorRole(role) { return String(role || '').includes('مدير') }
     function isSupervisorRole(role) { return String(role || '').includes('مشرف') }
-    function portalActor() {
-      try {
-        const session = JSON.parse(localStorage.getItem('rw_session_v1') || 'null');
-        if (!session || !session.userId || session.exp < Date.now()) return null;
-        const data = JSON.parse(localStorage.getItem('rw_users_v1') || 'null');
-        const users = data && Array.isArray(data.users) ? data.users : [];
-        const user = users.find(item => item.id === session.userId && item.active && item.role === session.role);
-        if (!user) return null;
-        const map = { admin: 'مدير', supervisor: 'مشرف', parent: 'ولي الأمر', teacher: 'المعلم' };
-        return { username: user.username, role: map[user.role] || '', token: String(session.token || session.userId) };
-      } catch (e) { return null }
-    }
     function sessionUser() {
-      try {
-        const saved = JSON.parse(sessionStorage.getItem(GATE_SESSION_KEY) || 'null');
-        if (!saved || !saved.username) return null;
-        const live = (readAcademyUsers() || []).find(u => String(u.username || '').toLowerCase() === String(saved.username).toLowerCase());
-        if (!live) return null;
-        return { username: live.username, role: live.role, password: live.password };
-      } catch (e) { return null }
+      const user = window.RoknAuth ? RoknAuth.current() : null;
+      if (!user || !user.username) return null;
+      return { username: user.username, role: user.role };
     }
     function isSupervisorSession() {
       const user = sessionUser();
@@ -1006,13 +984,11 @@
     }
     function canManageAdmin() {
       const user = sessionUser();
-      if (user) return isDirectorRole(user.role);
-      return sessionStorage.getItem('rw_admin_gate') === '1';
+      return !!(user && isDirectorRole(user.role));
     }
     function canRegisterStudents() {
       const user = sessionUser();
-      if (user) return isDirectorRole(user.role) || isSupervisorRole(user.role);
-      return sessionStorage.getItem('rw_manager_gate') === '1';
+      return !!(user && (isDirectorRole(user.role) || isSupervisorRole(user.role)));
     }
     function canEditStudents() {
       return canRegisterStudents() || canManageAdmin();
@@ -1040,6 +1016,7 @@
       home();
     }
     function logoutRokn() {
+      if (window.RoknAuth) RoknAuth.logout();
       sessionStorage.removeItem(GATE_SESSION_KEY);
       sessionStorage.removeItem('rw_admin_gate');
       sessionStorage.removeItem('rw_manager_gate');
@@ -1050,8 +1027,6 @@
       if (err) err.textContent = '';
       const form = document.getElementById('gateForm');
       if (form) form.reset();
-      const portalUser = portalActor();
-      if (portalUser) sessionStorage.setItem('rw_portal_bridge_skip', portalUser.token);
       home();
       go('home');
     }
@@ -1059,39 +1034,37 @@
       sessionStorage.setItem(GATE_SESSION_KEY, JSON.stringify({ username: user.username, role: user.role }));
       paintSession(user);
       toast(t('ok'));
-      go('home');
+      loadDb().then(function () { admin(); go('home'); });
     }
     function bootGate() {
-      try { ensureAcademyUsers() } catch (e) {
-        const err = document.getElementById('gateError');
-        if (err) err.textContent = 'تعذر قراءة حسابات الأكاديمية في هذا المتصفح.';
-        return;
-      }
-      let saved = null;
-      try { saved = JSON.parse(sessionStorage.getItem(GATE_SESSION_KEY) || 'null') } catch (e) { saved = null }
-      if (!saved || !saved.username) {
-        const portalUser = portalActor();
-        if (!portalUser || !portalUser.role || sessionStorage.getItem('rw_portal_bridge_skip') === portalUser.token) return;
-        const linked = (readAcademyUsers() || []).find(u => String(u.username || '').toLowerCase() === String(portalUser.username).toLowerCase());
-        const actor = linked || { username: portalUser.username, role: portalUser.role };
-        sessionStorage.setItem(GATE_SESSION_KEY, JSON.stringify({ username: actor.username, role: actor.role }));
-        paintSession(actor);
-        return;
-      }
-      const live = (readAcademyUsers() || []).find(u => String(u.username || '').toLowerCase() === String(saved.username).toLowerCase());
-      if (!live) { sessionStorage.removeItem(GATE_SESSION_KEY); return }
-      paintSession(live);
+      const err = document.getElementById('gateError');
+      return RoknAuth.prepare().then(function (prep) {
+        if (prep && prep.offline && err) err.textContent = prep.message || RoknAuth.offlineMessage();
+        return RoknAuth.verify();
+      }).then(function (data) {
+        if (data && data.offline) {
+          if (err) err.textContent = data.message || RoknAuth.offlineMessage();
+          return;
+        }
+        if (data && data.ok && data.user) paintSession(data.user);
+      });
     }
     const gateForm = document.getElementById('gateForm');
     if (gateForm) gateForm.addEventListener('submit', e => {
       e.preventDefault();
       const err = document.getElementById('gateError');
-      let user = null;
-      try { user = findAcademyUser(document.getElementById('gateUser').value, document.getElementById('gatePass').value) }
-      catch (ex) { if (err) err.textContent = 'تعذر التحقق الآن. اسمح بحفظ بيانات الموقع ثم أعد المحاولة.'; return }
-      if (!user) { if (err) err.textContent = 'اسم المستخدم أو كلمة المرور غير صحيحة.'; return }
+      const submit = gateForm.querySelector('button[type="submit"]');
+      if (submit) submit.disabled = true;
       if (err) err.textContent = '';
-      acceptLogin(user);
+      RoknAuth.login(document.getElementById('gateUser').value, document.getElementById('gatePass').value).then(function (data) {
+        if (submit) submit.disabled = false;
+        if (!data || !data.ok) {
+          if (err) err.textContent = (data && data.message) || 'اسم المستخدم أو كلمة المرور غير صحيحة.';
+          return;
+        }
+        if (err) err.textContent = '';
+        acceptLogin(data.user);
+      });
     });
     let accessNext = null;
     function openAccessPrompt(mode, next) {
@@ -1137,26 +1110,42 @@
       const mode = accessForm.dataset.mode || 'admin';
       const username = document.getElementById('accessUser').value;
       const password = document.getElementById('accessPass').value;
-      const user = findAcademyUser(username, password);
       const error = document.getElementById('accessError');
-      if (!user) { error.textContent = 'اسم المستخدم أو كلمة المرور غير صحيحة.'; return }
-      if (mode === 'admin' && !isDirectorRole(user.role)) {
-        error.textContent = isSupervisorRole(user.role) ? t('supervisorDenied') : 'لوحة الإدارة متاحة لحسابات المدير فقط.';
-        return
-      }
-      if (mode !== 'admin' && !isDirectorRole(user.role) && !isSupervisorRole(user.role)) {
-        error.textContent = 'تسجيل الطلاب متاح للمدير أو المشرف فقط.';
-        return
-      }
-      sessionStorage.setItem(GATE_SESSION_KEY, JSON.stringify({ username: user.username, role: user.role }));
-      paintSession(user);
-      const next = accessNext;
-      closeAccessPrompt();
-      if (next) next();
+      error.textContent = '';
+      RoknAuth.check(username, password).then(function (data) {
+        if (!data || !data.ok) { error.textContent = (data && data.message) || 'اسم المستخدم أو كلمة المرور غير صحيحة.'; return }
+        const user = data.user;
+        if (mode === 'admin' && !isDirectorRole(user.role)) {
+          error.textContent = isSupervisorRole(user.role) ? t('supervisorDenied') : 'لوحة الإدارة متاحة لحسابات المدير فقط.';
+          return
+        }
+        if (mode !== 'admin' && !isDirectorRole(user.role) && !isSupervisorRole(user.role)) {
+          error.textContent = 'تسجيل الطلاب متاح للمدير أو المشرف فقط.';
+          return
+        }
+        return RoknAuth.login(username, password).then(function (session) {
+          if (!session || !session.ok) { error.textContent = (session && session.message) || RoknAuth.offlineMessage(); return }
+          paintSession(session.user);
+          const next = accessNext;
+          closeAccessPrompt();
+          if (next) next();
+        });
+      });
     });
-    loadDb();
-    bootGate();
-    i18n(); const h = location.hash.slice(1); if (h && document.getElementById(h)) go(h);
+    function refreshShared() {
+      if (editingIndex >= 0) return;
+      loadDb(true).then(function () { admin(); live(); });
+    }
+    if (window.RoknStore) RoknStore.publicZoom().then(function (result) {
+      if (result && result.ok && result.zoomLink && !db.loaded) {
+        db.zoomLink = result.zoomLink;
+        live();
+      }
+    });
+    bootGate().then(loadDb).then(function () {
+      i18n(); const h = location.hash.slice(1); if (h && document.getElementById(h)) go(h);
+      if (window.RoknStore) RoknStore.watch(refreshShared);
+    });
   </script>
 <p class="dev-sign" dir="ltr">Created by Eng: Ahmed Yamani</p>
 </body>
