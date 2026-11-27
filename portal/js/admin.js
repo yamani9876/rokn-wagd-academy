@@ -219,7 +219,7 @@
   }
 
   document.addEventListener("DOMContentLoaded", function () {
-    PortalAuth.ready();
+    PortalAuth.ready().then(function () {
     if (PortalAuth.storageProblem()) {
       document.body.classList.remove("booting");
       document.getElementById("app").textContent = PortalAuth.storageProblem();
@@ -255,22 +255,22 @@
         return;
       }
       if (action === "toggle-user") {
-        resultToast(PortalAuth.setUserActive(id, button.getAttribute("data-active") !== "1"));
+        PortalAuth.setUserActive(id, button.getAttribute("data-active") !== "1").then(resultToast);
         return;
       }
       if (action === "delete-user") {
         if (window.confirm("حذف هذا المستخدم؟ لن يستطيع تسجيل الدخول بعد ذلك.")) {
-          resultToast(PortalAuth.deleteUser(id));
+          PortalAuth.deleteUser(id).then(resultToast);
         }
         return;
       }
       if (action === "reset-user") {
         var input = app.querySelector("[data-reset-for=\"" + id + "\"]");
-        resultToast(PortalAuth.resetUserPassword(id, input ? input.value : ""));
+        PortalAuth.resetUserPassword(id, input ? input.value : "").then(resultToast);
         return;
       }
       if (action === "delete-class") {
-        if (window.confirm("حذف هذا الفصل؟")) resultToast(PortalData.deleteClass(id));
+        if (window.confirm("حذف هذا الفصل؟")) Promise.resolve(PortalData.deleteClass(id)).then(resultToast);
         return;
       }
       if (action === "edit-student") {
@@ -291,22 +291,22 @@
         }
         if (window.confirm("حذف الطالب ودرجاته وحضوره؟")) {
           if (id === editingStudentId) editingStudentId = "";
-          resultToast(PortalData.deleteStudent(id));
+          Promise.resolve(PortalData.deleteStudent(id)).then(resultToast);
         }
         return;
       }
       if (action === "link-parent") {
         var select = app.querySelector("[data-parent-for=\"" + id + "\"]");
-        resultToast(PortalData.linkParent(id, select ? select.value : ""));
+        Promise.resolve(PortalData.linkParent(id, select ? select.value : "")).then(resultToast);
         return;
       }
-      if (action === "delete-announcement") resultToast(PortalData.deleteAnnouncement(id));
+      if (action === "delete-announcement") Promise.resolve(PortalData.deleteAnnouncement(id)).then(resultToast);
     });
 
     app.addEventListener("change", function (event) {
       var select = event.target.closest("[data-class-teacher]");
       if (!select) return;
-      resultToast(PortalData.assignTeacher(select.getAttribute("data-class-id"), select.value));
+      Promise.resolve(PortalData.assignTeacher(select.getAttribute("data-class-id"), select.value)).then(resultToast);
     });
 
     app.addEventListener("submit", function (event) {
@@ -328,10 +328,8 @@
           fees: data.get("fees"),
           paidAmount: data.get("paidAmount")
         };
-        if (editingStudentId) {
-          result = PortalData.updateStudent(editingStudentId, studentFields);
-          if (result.ok) editingStudentId = "";
-        } else result = PortalData.addStudent(studentFields);
+        if (editingStudentId) result = PortalData.updateStudent(editingStudentId, studentFields);
+        else result = PortalData.addStudent(studentFields);
       }
       if (form.id === "form-settings") {
         result = PortalData.updateSettings({
@@ -346,9 +344,14 @@
           audience: data.get("audience")
         });
       }
-      resultToast(result);
+      Promise.resolve(result).then(function (final) {
+        if (form.id === "form-student" && final && final.ok) editingStudentId = "";
+        resultToast(final || { ok: false, message: "تعذر حفظ البيانات في قاعدة البيانات المركزية." });
+      });
     });
 
+    if (window.PortalData && PortalData.onUpdate) PortalData.onUpdate(render);
     render();
+    });
   });
 })();

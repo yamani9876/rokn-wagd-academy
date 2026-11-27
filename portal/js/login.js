@@ -43,7 +43,7 @@
   }
 
   document.addEventListener("DOMContentLoaded", function () {
-    PortalAuth.ready();
+    PortalAuth.ready().then(function () {
     if (PortalAuth.storageProblem()) {
       document.body.classList.remove("booting");
       PortalUi.setAlert(document.getElementById("login-alert"), PortalAuth.storageProblem());
@@ -82,17 +82,18 @@
       PortalUi.setAlert(alertEl, "");
       submitBtn.disabled = true;
       submitBtn.textContent = "جارٍ التحقق…";
-      var result = PortalAuth.login(
+      PortalAuth.login(
         document.getElementById("username").value,
         document.getElementById("password").value
-      );
-      if (!result.ok) {
-        PortalUi.setAlert(alertEl, result.message);
-        submitBtn.disabled = false;
-        submitBtn.textContent = "تسجيل الدخول";
-        return;
-      }
-      location.replace(PortalAuth.homeFor(result.role));
+      ).then(function (result) {
+        if (!result.ok) {
+          PortalUi.setAlert(alertEl, result.message);
+          submitBtn.disabled = false;
+          submitBtn.textContent = "تسجيل الدخول";
+          return;
+        }
+        location.replace(PortalAuth.homeFor(result.role));
+      });
     });
 
     document.getElementById("register-form").addEventListener("submit", function (event) {
@@ -101,23 +102,25 @@
       var button = document.getElementById("register-submit");
       PortalUi.setAlert(regAlert, "");
       button.disabled = true;
-      var result = PortalAuth.register({
+      PortalAuth.register({
         name: document.getElementById("reg-name").value,
         email: document.getElementById("reg-email").value,
         password: document.getElementById("reg-password").value,
         role: document.getElementById("reg-role").value
+      }).then(function (result) {
+        button.disabled = false;
+        if (!result.ok) {
+          PortalUi.setAlert(regAlert, result.message);
+          return;
+        }
+        event.target.reset();
+        closeModal();
+        document.getElementById("username").value = result.username;
+        document.getElementById("password").value = "";
+        PortalUi.setAlert(alertEl, result.message, "ok");
+        document.getElementById("password").focus();
       });
-      button.disabled = false;
-      if (!result.ok) {
-        PortalUi.setAlert(regAlert, result.message);
-        return;
-      }
-      event.target.reset();
-      closeModal();
-      document.getElementById("username").value = result.username;
-      document.getElementById("password").value = "";
-      PortalUi.setAlert(alertEl, result.message, "ok");
-      document.getElementById("password").focus();
+    });
     });
   });
 })();

@@ -1,22 +1,44 @@
 /*
- * School records saved in this browser: classes, students, grades,
- * attendance, and announcements. Writes check the signed-in role first.
+ * School records stored on the central server. This browser only keeps the
+ * copy that the server last confirmed.
  */
 (function () {
-  var DATA_KEY = "rw_data_v1";
+  var memory = null;
+  var loadError = "";
 
   function readData() {
-    try {
-      var data = JSON.parse(localStorage.getItem(DATA_KEY) || "null");
-      if (!data || data.version !== 1) return null;
-      return data;
-    } catch (error) {
-      return null;
-    }
+    return memory;
   }
 
   function writeData(data) {
-    localStorage.setItem(DATA_KEY, JSON.stringify(data));
+    if (!data) return Promise.resolve({ ok: false, message: loadError || "تعذر تحميل قاعدة البيانات المركزية." });
+    var previous = memory;
+    memory = data;
+    if (!window.RoknStore) {
+      memory = previous;
+      return Promise.resolve({ ok: false, message: "تعذر الاتصال بقاعدة البيانات المركزية. لم يُحفظ التغيير على هذا الجهاز." });
+    }
+    return RoknStore.save({ portal: data }).then(function (result) {
+      if (!result || !result.ok) {
+        memory = previous;
+        return { ok: false, message: (result && result.message) || RoknStore.offlineMessage() };
+      }
+      if (result.portal) memory = result.portal;
+      return { ok: true };
+    });
+  }
+
+  function persist(data, message) {
+    return writeData(data).then(function (saved) {
+      if (!saved.ok) return saved;
+      return { ok: true, message: message };
+    });
+  }
+
+  function needData() {
+    var data = readData();
+    if (data) return data;
+    return null;
   }
 
   function clone(data) {
@@ -92,9 +114,34 @@
     };
   }
 
-  function ensure() {
-    if (!readData()) writeData(seed());
+  function ready() {
+    if (!window.RoknStore || !window.RoknAuth || !RoknAuth.current()) {
+      return Promise.resolve({ ok: true, skipped: true });
+    }
+    return RoknStore.load().then(function (result) {
+      if (!result || !result.ok) {
+        loadError = (result && result.message) || (window.RoknStore ? RoknStore.offlineMessage() : "تعذر تحميل قاعدة البيانات المركزية.");
+        memory = null;
+        return { ok: false, message: loadError };
+      }
+      loadError = "";
+      memory = result.portal || seed();
+      RoknStore.watch(function () {
+        RoknStore.load().then(function (fresh) {
+          if (!fresh || !fresh.ok || !fresh.portal) return;
+          memory = fresh.portal;
+          listeners.forEach(function (fn) { fn(); });
+        });
+      });
+      return { ok: true };
+    });
   }
+
+  function ensure() {
+    return ready();
+  }
+
+  var listeners = [];
 
   function actor(roles) {
     var user = window.PortalAuth.currentUser();
@@ -109,6 +156,7 @@
 
   function teacherClassIds(username) {
     var data = readData();
+    if (!data) return [];
     return data.classes.filter(function (item) {
       return item.teacherUsername === username;
     }).map(function (item) { return item.id; });
@@ -124,6 +172,7 @@
 
   function studentsFor(user) {
     var data = readData();
+    if (!data) return [];
     return data.students.filter(function (student) { return canTouchStudent(user, student); });
   }
 
@@ -167,9 +216,9 @@
       return { ok: false, message: "اختر معلماً نشطاً لهذا الفصل." };
     }
     var data = readData();
+    if (!data) return Promise.resolve({ ok: false, message: loadError || "تعذر تحميل قاعدة البيانات المركزية. أعد تحميل الصفحة. لم يُحفظ التغيير." });
     data.classes.push({ id: uid(), name: title, teacherUsername: teacherUsername });
-    writeData(data);
-    return { ok: true, message: "تمت إضافة الفصل." };
+    return persist(data, "تمت إضافة الفصل.");
   }
 
   function assignTeacher(classId, teacherUsername) {
@@ -178,11 +227,11 @@
       return { ok: false, message: "اختر معلماً نشطاً." };
     }
     var data = readData();
+    if (!data) return Promise.resolve({ ok: false, message: loadError || "تعذر تحميل قاعدة البيانات المركزية. أعد تحميل الصفحة. لم يُحفظ التغيير." });
     var item = data.classes.find(function (entry) { return entry.id === classId; });
     if (!item) return { ok: false, message: "الفصل غير موجود." };
     item.teacherUsername = teacherUsername;
-    writeData(data);
-    return { ok: true, message: "تم تحديث معلم الفصل." };
+    return persist(data, "تم تحديث معلم الفصل.");
   }
 
   function deleteClass(classId) {
@@ -193,8 +242,7 @@
     }
     data.classes = data.classes.filter(function (item) { return item.id !== classId; });
     data.schedule = data.schedule.filter(function (item) { return item.classId !== classId; });
-    writeData(data);
-    return { ok: true, message: "تم حذف الفصل." };
+    return persist(data, "تم حذف الفصل.");
   }
 
   function moneyValue(value) {
@@ -251,8 +299,7 @@
       paidAmount: paidAmount,
       remainingAmount: remainingFees(fees, paidAmount)
     });
-    writeData(data);
-    return { ok: true, message: "تمت إضافة الطالب." };
+    return persist(data, "تمت إضافة الطالب.");
   }
 
   function updateStudent(studentId, fields) {
@@ -288,8 +335,7 @@
     student.fees = fees;
     student.paidAmount = paidAmount;
     student.remainingAmount = remainingFees(fees, paidAmount);
-    writeData(data);
-    return { ok: true, message: "تم حفظ التعديلات." };
+    return persist(data, "تم حفظ التعديلات.");
   }
 
   function linkParent(studentId, parentUsername) {
@@ -298,27 +344,28 @@
       return { ok: false, message: "اختر ولي أمر نشطاً." };
     }
     var data = readData();
+    if (!data) return Promise.resolve({ ok: false, message: loadError || "تعذر تحميل قاعدة البيانات المركزية. أعد تحميل الصفحة. لم يُحفظ التغيير." });
     var student = data.students.find(function (item) { return item.id === studentId; });
     if (!student) return { ok: false, message: "الطالب غير موجود." };
     student.parentUsername = parentUsername || "";
-    writeData(data);
-    return { ok: true, message: "تم تحديث ربط ولي الأمر." };
+    return persist(data, "تم تحديث ربط ولي الأمر.");
   }
 
   function deleteStudent(studentId) {
     if (!actor(["admin"])) return { ok: false, message: "هذا الإجراء للمدير فقط." };
     var data = readData();
+    if (!data) return Promise.resolve({ ok: false, message: loadError || "تعذر تحميل قاعدة البيانات المركزية. أعد تحميل الصفحة. لم يُحفظ التغيير." });
     data.students = data.students.filter(function (item) { return item.id !== studentId; });
     data.grades = data.grades.filter(function (item) { return item.studentId !== studentId; });
     data.attendance = data.attendance.filter(function (item) { return item.studentId !== studentId; });
-    writeData(data);
-    return { ok: true, message: "تم حذف الطالب وسجلاته." };
+    return persist(data, "تم حذف الطالب وسجلاته.");
   }
 
   function saveGrade(studentId, subject, score) {
     var user = actor(["teacher"]);
     if (!user) return { ok: false, message: "رصد الدرجات متاح للمعلم فقط." };
     var data = readData();
+    if (!data) return Promise.resolve({ ok: false, message: loadError || "تعذر تحميل قاعدة البيانات المركزية. أعد تحميل الصفحة. لم يُحفظ التغيير." });
     var student = data.students.find(function (item) { return item.id === studentId; });
     if (!canTouchStudent(user, student)) return { ok: false, message: "هذا الطالب خارج فصولك." };
     if (window.PortalUi.SUBJECTS.indexOf(subject) === -1) return { ok: false, message: "اختر مادة من القائمة." };
@@ -341,8 +388,7 @@
         updatedAt: window.PortalUi.todayISO()
       });
     }
-    writeData(data);
-    return { ok: true, message: "تم حفظ الدرجة." };
+    return persist(data, "تم حفظ الدرجة.");
   }
 
   function markAttendance(studentId, status) {
@@ -352,6 +398,7 @@
       return { ok: false, message: "اختر حالة حضور صحيحة." };
     }
     var data = readData();
+    if (!data) return Promise.resolve({ ok: false, message: loadError || "تعذر تحميل قاعدة البيانات المركزية. أعد تحميل الصفحة. لم يُحفظ التغيير." });
     var student = data.students.find(function (item) { return item.id === studentId; });
     if (!canTouchStudent(user, student)) return { ok: false, message: "هذا الطالب خارج فصولك." };
     var date = window.PortalUi.todayISO();
@@ -360,8 +407,7 @@
     });
     if (existing) existing.status = status;
     else data.attendance.push({ studentId: studentId, date: date, status: status });
-    writeData(data);
-    return { ok: true, message: "تم حفظ حضور اليوم." };
+    return persist(data, "تم حفظ حضور اليوم.");
   }
 
   function addAnnouncement(fields) {
@@ -372,6 +418,7 @@
     if (title.length < 2 || body.length < 2) return { ok: false, message: "اكتب عنوان الإعلان ونصه." };
     if (!audience) return { ok: false, message: "اختر جهة الإعلان." };
     var data = readData();
+    if (!data) return Promise.resolve({ ok: false, message: loadError || "تعذر تحميل قاعدة البيانات المركزية. أعد تحميل الصفحة. لم يُحفظ التغيير." });
     data.announcements.unshift({
       id: uid(),
       title: title,
@@ -379,16 +426,15 @@
       audience: audience,
       date: window.PortalUi.todayISO()
     });
-    writeData(data);
-    return { ok: true, message: "تم نشر الإعلان." };
+    return persist(data, "تم نشر الإعلان.");
   }
 
   function deleteAnnouncement(id) {
     if (!actor(["admin"])) return { ok: false, message: "هذا الإجراء للمدير فقط." };
     var data = readData();
+    if (!data) return Promise.resolve({ ok: false, message: loadError || "تعذر تحميل قاعدة البيانات المركزية. أعد تحميل الصفحة. لم يُحفظ التغيير." });
     data.announcements = data.announcements.filter(function (item) { return item.id !== id; });
-    writeData(data);
-    return { ok: true, message: "تم حذف الإعلان." };
+    return persist(data, "تم حذف الإعلان.");
   }
 
   function forgetUser(username) {
@@ -400,7 +446,7 @@
     data.students.forEach(function (item) {
       if (item.parentUsername === username) item.parentUsername = "";
     });
-    writeData(data);
+    return writeData(data);
   }
 
   function updateSettings(fields) {
@@ -409,22 +455,13 @@
     var welcomeNote = cleanText(fields.welcomeNote, 80);
     if (academyName.length < 2) return { ok: false, message: "اكتب اسم الأكاديمية." };
     var data = readData();
+    if (!data) return Promise.resolve({ ok: false, message: loadError || "تعذر تحميل قاعدة البيانات المركزية. أعد تحميل الصفحة. لم يُحفظ التغيير." });
     data.settings.academyName = academyName;
     data.settings.welcomeNote = welcomeNote;
-    writeData(data);
-    return { ok: true, message: "تم حفظ الإعدادات." };
+    return persist(data, "تم حفظ الإعدادات.");
   }
 
   function getZoomLink(username) {
-    try {
-      if (username) {
-        var specific = localStorage.getItem("rw_zoom_link_" + username);
-        if (specific && specific.trim()) return specific.trim();
-      }
-      var direct = localStorage.getItem("rw_zoom_link");
-      if (direct && direct.trim()) return direct.trim();
-    } catch (e) {}
-
     var data = readData();
     if (data) {
       if (username && data.zoomLinks && data.zoomLinks[username] && data.zoomLinks[username].trim()) {
@@ -448,22 +485,24 @@
       cleanLink = "https://" + cleanLink;
     }
     var data = readData();
-    if (!data) data = seed();
+    if (!data) return Promise.resolve({ ok: false, message: loadError || "تعذر تحميل قاعدة البيانات المركزية. لم يُحفظ رابط الحصة." });
     if (!data.zoomLinks) data.zoomLinks = {};
     var teacherKey = username || user.username || "teacher";
     data.zoomLinks[teacherKey] = cleanLink;
     if (!data.settings) data.settings = {};
     data.settings.zoomLink = cleanLink;
-    writeData(data);
-    try {
-      localStorage.setItem("rw_zoom_link", cleanLink);
-      localStorage.setItem("rw_zoom_link_" + teacherKey, cleanLink);
-    } catch (e) {}
-    return { ok: true, message: "تم حفظ رابط زووم بنجاح ✓", zoomLink: cleanLink };
+    return persist(data, "تم حفظ رابط زووم بنجاح ✓").then(function (saved) {
+      if (!saved.ok) return saved;
+      saved.zoomLink = cleanLink;
+      return saved;
+    });
   }
 
   window.PortalData = {
     ensure: ensure,
+    ready: ready,
+    loadError: function () { return loadError; },
+    onUpdate: function (fn) { listeners.push(fn); },
     settings: settings,
     snapshotFor: snapshotFor,
     addClass: addClass,

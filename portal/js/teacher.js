@@ -87,7 +87,7 @@
   }
 
   document.addEventListener("DOMContentLoaded", function () {
-    PortalAuth.ready();
+    PortalAuth.ready().then(function () {
     if (PortalAuth.storageProblem()) {
       document.body.classList.remove("booting");
       document.getElementById("app").textContent = PortalAuth.storageProblem();
@@ -110,9 +110,10 @@
         return;
       }
       if (button.getAttribute("data-action") === "attend") {
-        var result = PortalData.markAttendance(button.getAttribute("data-id"), button.getAttribute("data-status"));
-        PortalUi.toast(result.message);
-        if (result.ok) render();
+        Promise.resolve(PortalData.markAttendance(button.getAttribute("data-id"), button.getAttribute("data-status"))).then(function (result) {
+          PortalUi.toast(result && result.message);
+          if (result && result.ok) render();
+        });
       }
     });
 
@@ -122,20 +123,24 @@
       if (form.matches("[data-zoom-form]")) {
         event.preventDefault();
         var dataZoom = new FormData(form);
-        var saveRes = PortalData.saveZoomLink(dataZoom.get("zoomLink"), user.username);
-        PortalUi.toast(saveRes.message);
-        if (saveRes.ok) render();
+        Promise.resolve(PortalData.saveZoomLink(dataZoom.get("zoomLink"), user.username)).then(function (saveRes) {
+          PortalUi.toast(saveRes && saveRes.message);
+          if (saveRes && saveRes.ok) render();
+        });
         return;
       }
       if (form.matches("[data-grade-form]")) {
         event.preventDefault();
         var data = new FormData(form);
-        var result = PortalData.saveGrade(form.getAttribute("data-id"), data.get("subject"), data.get("score"));
-        PortalUi.toast(result.message);
-        if (result.ok) render();
+        Promise.resolve(PortalData.saveGrade(form.getAttribute("data-id"), data.get("subject"), data.get("score"))).then(function (result) {
+          PortalUi.toast(result && result.message);
+          if (result && result.ok) render();
+        });
       }
     });
 
+    if (window.PortalData && PortalData.onUpdate) PortalData.onUpdate(render);
     render();
+    });
   });
 })();

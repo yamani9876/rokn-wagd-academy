@@ -57,7 +57,7 @@
   }
 
   document.addEventListener("DOMContentLoaded", function () {
-    PortalAuth.ready();
+    PortalAuth.ready().then(function () {
     if (PortalAuth.storageProblem()) {
       document.body.classList.remove("booting");
       document.getElementById("app").textContent = PortalAuth.storageProblem();
@@ -76,6 +76,8 @@
       studentId = button.getAttribute("data-id");
       render();
     });
+    if (window.PortalData && PortalData.onUpdate) PortalData.onUpdate(render);
     render();
+    });
   });
 })();
