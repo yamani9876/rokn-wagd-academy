@@ -1,8 +1,5 @@
 "use strict";
 
-const { connectLambda, getStore } = require("@netlify/blobs");
-const { handleRequest } = require("../../lib/api");
-
 function lowerHeaders(source) {
   const headers = {};
   Object.keys(source || {}).forEach(function (key) {
@@ -22,43 +19,48 @@ function decodeBlobs(raw) {
   }
 }
 
-function blobPayload(raw) {
-  const decoded = decodeBlobs(raw);
-  if (!decoded || !decoded.token) return typeof raw === "string" ? raw : "";
-  return Buffer.from(JSON.stringify({
-    url: decoded.url || decoded.edgeURL || "",
-    token: decoded.token
-  })).toString("base64");
-}
-
-function openStore(event) {
+function applyBlobsContext(lib, event) {
   const headers = lowerHeaders(event && event.headers);
-  const payload = blobPayload(event && event.blobs);
-  const decoded = decodeBlobs(event && event.blobs);
+  const raw = event && event.blobs;
+  const decoded = decodeBlobs(raw);
   const siteID = headers["x-nf-site-id"] || process.env.SITE_ID || process.env.NETLIFY_SITE_ID || (decoded && decoded.siteID) || "";
   const token = (decoded && decoded.token) || "";
-  if (payload) {
+  const edgeURL = decoded && (decoded.url || decoded.edgeURL);
+  const deployID = headers["x-nf-deploy-id"] || "";
+  if (typeof raw === "string" && raw && lib.connectLambda) {
     try {
-      connectLambda({ blobs: payload, headers: headers });
+      lib.connectLambda({ blobs: raw, headers: headers });
     } catch (error) {
-      /* The explicit siteID and token below cover a malformed lambda payload. */
+      /* setEnvironmentContext below still applies a decoded token. */
     }
   }
+  if (siteID && token && lib.setEnvironmentContext) {
+    const context = { siteID: siteID, token: token };
+    if (edgeURL) context.edgeURL = edgeURL;
+    if (deployID) context.deployID = deployID;
+    lib.setEnvironmentContext(context);
+  }
+  return { siteID: siteID, token: token, blobs: raw ? "present" : "missing" };
+}
+
+function openStore(lib, event) {
   try {
-    return getStore("rokn-wagd");
-  } catch (error) {
-    if (siteID && token) {
-      const options = { name: "rokn-wagd", siteID: siteID, token: token };
-      const edgeURL = decoded && (decoded.url || decoded.edgeURL);
-      if (edgeURL) options.edgeURL = edgeURL;
-      return getStore(options);
+    return lib.getStore("rokn-wagd");
+  } catch (first) {
+    let meta = { siteID: "", token: "", blobs: "missing" };
+    try {
+      meta = applyBlobsContext(lib, event);
+      return lib.getStore("rokn-wagd");
+    } catch (second) {
+      const reason = (second && second.message) || (first && first.message) || "getStore failed";
+      throw new Error(
+        reason
+        + " | siteID=" + (meta.siteID || "missing")
+        + " | token=" + (meta.token ? "present" : "missing")
+        + " | blobs=" + meta.blobs
+        + " | env=" + (process.env.NETLIFY_BLOBS_CONTEXT ? "present" : "missing")
+      );
     }
-    const detail = (error && error.message ? error.message : "getStore failed")
-      + " (siteID=" + (siteID || "missing")
-      + ", blobs=" + (payload ? "present" : "missing") + ")";
-    const wrapped = new Error(detail);
-    wrapped.name = error && error.name ? error.name : "Error";
-    throw wrapped;
   }
 }
 
@@ -85,7 +87,9 @@ function jsonResult(status, body) {
 
 exports.handler = async function (event) {
   try {
-    const blobs = openStore(event);
+    const lib = require("@netlify/blobs");
+    const { handleRequest } = require("../../lib/api");
+    const blobs = openStore(lib, event);
     const store = {
       read: async function (key) {
         return blobs.get(key, { type: "json" });
@@ -95,19 +99,19 @@ exports.handler = async function (event) {
       }
     };
     let body = {};
-    if (event.body) {
+    if (event && event.body) {
       const text = event.isBase64Encoded ? Buffer.from(event.body, "base64").toString("utf8") : event.body;
       body = text ? JSON.parse(text) : {};
     }
     const result = await handleRequest({
-      method: event.httpMethod,
+      method: event && event.httpMethod,
       path: apiPath(event),
-      headers: event.headers || {},
+      headers: (event && event.headers) || {},
       body: body
     }, store);
     return jsonResult(result.status, result.body);
   } catch (error) {
-    const detail = error && error.message ? String(error.message) : "تعذر الاتصال بقاعدة البيانات المركزية.";
+    const detail = error && error.message ? String(error.message) : String(error);
     return jsonResult(500, { ok: false, message: detail, error: detail });
   }
 };
